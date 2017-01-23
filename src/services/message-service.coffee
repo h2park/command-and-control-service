@@ -8,9 +8,9 @@ class MessageService
   create: ({ message, meshbluAuth, meshbluDevice }, callback) =>
     { rulesets } = meshbluDevice
     meshblu = new Meshblu meshbluAuth
-    async.map rulesets, async.apply(@_getRuleset, meshblu), (error, rulesetMaps) =>
+    async.map rulesets, async.apply(@_getRuleset, meshblu), (error, rulesMap) =>
       return callback error if error?
-      async.map _.flatten(rulesetMaps), async.apply(@_doRule, message), (error, results) =>
+      async.map _.flatten(rulesMap), async.apply(@_doRule, message), (error, results) =>
         return callback error if error?
         commands = _.flatten results
         async.each commands, async.apply(@_doCommand, meshblu), callback
@@ -21,16 +21,20 @@ class MessageService
       async.map device.rules, (rule, next) =>
         request.get rule.url, json: true, (error, response, body) =>
           next error, body
-      , callback
+      , (error, rules) =>
+        return callback error if error?
+        return callback null, _.flatten rules
 
   _doRule: (message, config, callback) =>
     engine = new MeshbluRulesEngine config
     engine.run message, callback
 
   _doCommand: (meshblu, command, callback) =>
-    callback new Error 'unknown command type' if command.type != 'meshblu'
-    callback new Error 'unsupported operation type' if command.params.operation != 'update'
-    callback new Error 'invalid uuid' unless command.params.uuid?
-    meshblu.updateDangerously command.params.uuid, command.params.data, callback
+    return callback new Error 'unknown command type' if command.type != 'meshblu'
+    return callback new Error 'unsupported operation type' if command.params.operation != 'update'
+    return callback new Error 'invalid uuid' unless command.params.uuid?
+    options = {}
+    # options.as = command.params.as if command.params.as?
+    meshblu.updateDangerously command.params.uuid, command.params.data, options, callback
 
 module.exports = MessageService
