@@ -34,7 +34,7 @@ class MessageService
     return callback new Error 'unsupported operation type' if command.params.operation != 'update'
     return callback new Error 'invalid uuid' unless command.params.uuid?
     options = {}
-    # options.as = command.params.as if command.params.as?
+    options.as = command.params.as if command.params.as?
     meshblu.updateDangerously command.params.uuid, command.params.data, options, callback
 
 module.exports = MessageService
