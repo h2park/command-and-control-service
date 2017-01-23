@@ -8,6 +8,9 @@ describe 'POST /v1/messages', ->
     @meshblu = shmock 0xd00d
     enableDestroy @meshblu
 
+    @ruleServer = shmock 0xdddd
+    enableDestroy @ruleServer
+
     @logFn = sinon.spy()
     serverOptions =
       port: undefined,
@@ -26,6 +29,7 @@ describe 'POST /v1/messages', ->
       done()
 
   afterEach ->
+    @ruleServer.destroy()
     @meshblu.destroy()
     @server.destroy()
 
@@ -35,13 +39,11 @@ describe 'POST /v1/messages', ->
 
       roomGroupDevice =
         uuid: 'room-group-uuid'
-        rules: [
-          uuid: 'rule-uuid'
+        rulesets: [
+          uuid: 'ruleset-uuid'
         ]
 
-      ruleDevice =
-        uuid: 'rule-uuid'
-        type: 'meshblu:rule'
+      rule =
         rules:
           add:
             conditions:
@@ -68,7 +70,6 @@ describe 'POST /v1/messages', ->
                       jobType: "start-skype",
                       meetingId: "{{genisys.currentMeeting.meetingId}}",
                       people: "{{genisys.people.byAttendee.isAttendee}}"
-
         noevents: [
           type: 'meshblu'
           params:
@@ -79,15 +80,26 @@ describe 'POST /v1/messages', ->
                 "genisys.activities.startSkype.people": []
         ]
 
+      @getRule = @ruleServer
+        .get '/rules/a-rule.json'
+        .reply 200, rule
+
+      rulesetDevice =
+        uuid: 'ruleset-uuid'
+        type: 'meshblu:ruleset'
+        rules: [
+          url: "http://localhost:#{0xdddd}/rules/a-rule.json"
+        ]
+
       @authDevice = @meshblu
         .get '/v2/whoami'
         .set 'Authorization', "Basic #{userAuth}"
         .reply 200, roomGroupDevice
 
-      @getRuleDevice = @meshblu
-        .get '/v2/devices/rule-uuid'
+      @getRulesetDevice = @meshblu
+        .get '/v2/devices/ruleset-uuid'
         .set 'Authorization', "Basic #{userAuth}"
-        .reply 200, ruleDevice
+        .reply 200, rulesetDevice
 
       @updateActivitiesDevice = @meshblu
         .put '/v2/devices/activities-device-uuid'
@@ -119,8 +131,11 @@ describe 'POST /v1/messages', ->
     it 'should auth the request with meshblu', ->
       @authDevice.done()
 
-    it 'should fetch the rule device', ->
-      @getRuleDevice.done()
+    it 'should fetch the ruleset device', ->
+      @getRulesetDevice.done()
+
+    it 'should get the rule url', ->
+      @getRule.done()
 
     it 'should update the activities device', ->
       @updateActivitiesDevice.done()

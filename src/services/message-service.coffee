@@ -1,21 +1,27 @@
 _ = require 'lodash'
+request = require 'request'
 async = require 'async'
 Meshblu = require 'meshblu-http'
 MeshbluRulesEngine = require 'meshblu-rules-engine'
 
 class MessageService
   create: ({ message, meshbluAuth, meshbluDevice }, callback) =>
-    { rules } = meshbluDevice
+    { rulesets } = meshbluDevice
     meshblu = new Meshblu meshbluAuth
-    async.map rules, async.apply(@_getRule, meshblu), (error, ruleMap) =>
+    async.map rulesets, async.apply(@_getRuleset, meshblu), (error, rulesetMaps) =>
       return callback error if error?
-      async.map ruleMap, async.apply(@_doRule, message), (error, results) =>
+      async.map _.flatten(rulesetMaps), async.apply(@_doRule, message), (error, results) =>
         return callback error if error?
         commands = _.flatten results
         async.each commands, async.apply(@_doCommand, meshblu), callback
 
-  _getRule: (meshblu, rule, callback) =>
-    meshblu.device rule.uuid, callback
+  _getRuleset: (meshblu, rule, callback) =>
+    meshblu.device rule.uuid, (error, device) =>
+      return callback error if error?
+      async.map device.rules, (rule, next) =>
+        request.get rule.url, json: true, (error, response, body) =>
+          next error, body
+      , callback
 
   _doRule: (message, config, callback) =>
     engine = new MeshbluRulesEngine config
