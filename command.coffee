@@ -17,7 +17,7 @@ class Command
   run: =>
     # Use this to require env
     # @panic new Error('Missing required environment variable: ENV_NAME') if _.isEmpty @serverOptions.envName
-    @panic new Error('Missing meshbluConfig') if _.isEmpty @serverOptions.meshbluConfig
+    # @panic new Error('Missing meshbluConfig') if _.isEmpty @serverOptions.meshbluConfig
 
     server = new Server @serverOptions
     server.run (error) =>
