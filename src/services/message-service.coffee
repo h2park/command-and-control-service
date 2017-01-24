@@ -5,12 +5,12 @@ Meshblu = require 'meshblu-http'
 MeshbluRulesEngine = require 'meshblu-rules-engine'
 
 class MessageService
-  create: ({ message, meshbluAuth, meshbluDevice }, callback) =>
-    { rulesets } = meshbluDevice
+  create: ({ data, meshbluAuth, device }, callback) =>
+    { rulesets } = device
     meshblu = new Meshblu meshbluAuth
     async.map rulesets, async.apply(@_getRuleset, meshblu), (error, rulesMap) =>
       return callback error if error?
-      async.map _.flatten(rulesMap), async.apply(@_doRule, message), (error, results) =>
+      async.map _.flatten(rulesMap), async.apply(@_doRule, {data, device}, meshbluAuth), (error, results) =>
         return callback error if error?
         commands = _.flatten results
         async.each commands, async.apply(@_doCommand, meshblu), callback
@@ -25,9 +25,9 @@ class MessageService
         return callback error if error?
         return callback null, _.flatten rules
 
-  _doRule: (message, config, callback) =>
-    engine = new MeshbluRulesEngine config
-    engine.run message, callback
+  _doRule: (context, meshbluConfig, rulesConfig, callback) =>
+    engine = new MeshbluRulesEngine {meshbluConfig, rulesConfig}
+    engine.run context, callback
 
   _doCommand: (meshblu, command, callback) =>
     return callback new Error 'unknown command type' if command.type != 'meshblu'

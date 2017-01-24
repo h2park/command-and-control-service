@@ -61,19 +61,19 @@ describe 'POST /v1/messages', ->
             event:
               type: 'meshblu'
               params:
-                uuid: "{{genisys.devices.activities}}"
+                uuid: "{{data.genisys.devices.activities}}"
                 operation: 'update'
                 data:
                   $set:
                     "genisys.activities.startSkype":
                       title: "Start Skype",
                       jobType: "start-skype",
-                      meetingId: "{{genisys.currentMeeting.meetingId}}",
-                      people: "{{genisys.people.byAttendee.isAttendee}}"
+                      meetingId: "{{data.genisys.currentMeeting.meetingId}}",
+                      people: "{{data.genisys.people.byAttendee.isAttendee}}"
         noevents: [
           type: 'meshblu'
           params:
-            uuid: "{{genisys.devices.activities}}"
+            uuid: "{{data.genisys.devices.activities}}"
             operation: 'update'
             data:
               $set:

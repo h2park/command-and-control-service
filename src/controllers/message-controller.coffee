@@ -3,9 +3,9 @@ class MessageController
     throw new Error 'Missing messageService' unless @messageService?
 
   create: (request, response) =>
-    message = request.body
+    data = request.body
     { meshbluAuth, meshbluDevice } = request
-    @messageService.create { meshbluAuth, meshbluDevice, message }, (error) =>
+    @messageService.create { meshbluAuth, data, device: meshbluDevice }, (error) =>
       return response.sendError(error) if error?
       response.sendStatus(200)
 
