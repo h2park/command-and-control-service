@@ -30,11 +30,16 @@ class MessageService
     engine.run context, callback
 
   _doCommand: (meshblu, command, callback) =>
-    return callback new Error 'unknown command type' if command.type != 'meshblu'
-    return callback new Error 'unsupported operation type' if command.params.operation != 'update'
-    return callback new Error 'invalid uuid' unless command.params.uuid?
+    return callback @_createError('unknown command type', 422) if command.type != 'meshblu'
+    return callback @_createError('unsupported operation type', 422) if command.params.operation != 'update'
+    return callback @_createError('invalid uuid', 422) unless command.params.uuid?
     options = {}
     options.as = command.params.as if command.params.as?
     meshblu.updateDangerously command.params.uuid, command.params.data, options, callback
+  
+  _createError: (message, code=500) =>
+    error = new Error message
+    error.code = code
+    return error
 
 module.exports = MessageService
