@@ -2,7 +2,6 @@ enableDestroy      = require 'server-destroy'
 octobluExpress     = require 'express-octoblu'
 MeshbluAuth        = require 'express-meshblu-auth'
 Router             = require './router'
-debug              = require('debug')('command-and-control-service:server')
 MessageService     = require './services/message-service'
 
 class Server
