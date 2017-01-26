@@ -31,12 +31,19 @@ class MessageService
 
   _doCommand: (meshblu, command, callback) =>
     return callback @_createError('unknown command type', 422) if command.type != 'meshblu'
-    return callback @_createError('unsupported operation type', 422) if command.params.operation != 'update'
-    return callback @_createError('invalid uuid', 422) unless command.params.uuid?
+
     options = {}
     options.as = command.params.as if command.params.as?
-    meshblu.updateDangerously command.params.uuid, command.params.data, options, callback
-  
+
+    if command.params.operation == 'update'
+      return callback @_createError('invalid uuid', 422) unless command.params.uuid?
+      return meshblu.updateDangerously command.params.uuid, command.params.data, options, callback
+
+    if command.params.operation == 'message'
+      return meshblu.message command.params.message, options, callback
+
+    return callback @_createError('unsupported operation type', 422)
+
   _createError: (message, code=500) =>
     error = new Error message
     error.code = code

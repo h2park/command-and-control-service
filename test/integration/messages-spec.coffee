@@ -65,12 +65,8 @@ describe 'POST /v1/messages', ->
                 operation: 'update'
                 data:
                   $set:
-                    "genisys.activities.startSkype":
-                      title: "Start Skype",
-                      jobType: "start-skype",
-                      meetingId: "{{data.genisys.currentMeeting.meetingId}}",
-                      people: "{{data.genisys.people.byAttendee.isAttendee}}"
-        noevents: [
+                    "genisys.activities.startSkype.people": []
+        noevents: [ {
           type: 'meshblu'
           params:
             uuid: "{{data.genisys.devices.activities}}"
@@ -78,7 +74,14 @@ describe 'POST /v1/messages', ->
             data:
               $set:
                 "genisys.activities.startSkype.people": []
-        ]
+        }, {
+          type: 'meshblu'
+          params:
+            operation: 'message'
+            message:
+              devices: ['erik-device']
+              favoriteBand: 'santana'
+        }]
 
       @getRule = @ruleServer
         .get '/rules/a-rule.json'
@@ -106,6 +109,14 @@ describe 'POST /v1/messages', ->
         .send {
           $set:
             "genisys.activities.startSkype.people": []
+        }
+        .reply 204
+
+      @messageErikDevice = @meshblu
+        .post '/messages'
+        .send {
+            devices: ['erik-device']
+            favoriteBand: 'santana'
         }
         .reply 204
 
@@ -139,3 +150,6 @@ describe 'POST /v1/messages', ->
 
     it 'should update the activities device', ->
       @updateActivitiesDevice.done()
+
+    it 'should message Erik about his favorite band', ->
+      @messageErikDevice.done()
