@@ -1,6 +1,6 @@
 {
   "name": "command-and-control-service",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "command-and-control-service an Octoblu Service",
   "keywords": [
     "Octoblu",
@@ -41,7 +41,7 @@
     "async": "^2.1.4",
     "coffee-script": "^1.12.3",
     "debug": "^2.2.0",
-    "express-meshblu-auth": "^9.0.1",
+    "express-meshblu-auth": "^9.0.2",
     "express-octoblu": "^3.0.0",
     "lodash": "^4.15.0",
     "meshblu-config": "^6.0.0",
