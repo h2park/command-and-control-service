@@ -10,8 +10,8 @@
 
 * [Introduction](#introduction)
 * [Getting Started](#getting-started)
-  * [Install](#install)
 * [Usage](#usage)
+  * [Install](#install)
   * [Default](#default)
   * [Docker](#docker)
     * [Development](#development)
@@ -22,9 +22,88 @@
 
 # Introduction
 
-...
+The command and control service allows rules to be applied to messages or configuration changes
+on a Meshblu device and perform updates on another.
 
 # Getting Started
+
+1. Create Ruleset device
+1. Add webhook
+
+### Create Ruleset Device
+Using the command and control system requires a new Meshblu device called the `Ruleset`. The `Ruleset`
+is a device that contains a list of URLs that point to the various rules that will be applied.
+
+*Example Ruleset Device*
+```json
+{
+  "name": "Ruleset",
+  "type": "meshblu:ruleset",
+  "rules": {
+    "start-skype": {
+      "key": "start-skype",
+      "url": "https://raw.githubusercontent.com/octoblu/smartspaces-core-rules/master/start-skype/action.json"
+    }
+  }
+}
+```
+
+See [meshblu-rules-engine](https://github.com/octoblu/meshblu-rules-engine) for the rules syntax.
+
+### Add Webhook
+
+On the device that will have the rules applied to it, you will need to set up a webhook to forward events to the command and control service.
+
+*Example Webhook*
+```json
+{
+  "name": "My Device",
+  "meshblu": {
+    "forwarders": {
+      "version": "2.0.0",
+      "broadcast": {
+        "sent": [
+          {
+            "type": "webhook",
+            "url": "https://command-and-control.octoblu.com/v1/messages",
+            "method": "POST",
+            "generateAndForwardMeshbluCredentials": true
+          }
+        ]
+      },
+      "configure": {
+        "sent": [
+          {
+            "type": "webhook",
+            "url": "https://command-and-control.octoblu.com/v1/messages",
+            "method": "POST",
+            "generateAndForwardMeshbluCredentials": true
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+
+# Usage
+
+When the rules are applied to the an update may be applied to another device as a result.
+
+*Example Output*
+```json
+{
+  "uuid": "some-skype-uuid",
+  "update": {
+    "$set": {
+      "inSkype": true
+    }
+  }
+}
+```
+
+The update will be applied to the device with uuid `some-skype-uuid` and will change the `inSkype` property to `true`.
 
 ## Install
 
@@ -34,15 +113,13 @@ cd /path/to/command-and-control-service
 npm install
 ```
 
-# Usage
-
 ## Default
 
 ```javascript
 node command.js
 ```
 
-## Docker 
+## Docker
 
 ### Development
 
@@ -68,7 +145,7 @@ env DEBUG='command-and-control-service*' node command.js
 env DEBUG='command-and-control-service*' node command.js
 ```
 
-## Test 
+## Test
 
 ```bash
 npm test
