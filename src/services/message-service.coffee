@@ -31,7 +31,7 @@ class MessageService
     engine.run context, callback
 
   _doCommand: (meshblu, command, callback) =>
-    debug command
+    debug JSON.stringify command, null, 2
     return callback @_createError('unknown command type', 422) if command.type != 'meshblu'
 
     options = {}
