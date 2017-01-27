@@ -3,6 +3,7 @@ request = require 'request'
 async = require 'async'
 Meshblu = require 'meshblu-http'
 MeshbluRulesEngine = require 'meshblu-rules-engine'
+debug = require('debug')('command-and-control:message-service')
 
 class MessageService
   create: ({ data, meshbluAuth, device }, callback) =>
@@ -30,6 +31,7 @@ class MessageService
     engine.run context, callback
 
   _doCommand: (meshblu, command, callback) =>
+    debug command
     return callback @_createError('unknown command type', 422) if command.type != 'meshblu'
 
     options = {}
