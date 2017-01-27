@@ -49,7 +49,7 @@ describe 'POST /v1/messages', ->
           uuid: 'ruleset-uuid'
         ]
 
-      rule =
+      aRule =
         rules:
           add:
             conditions:
@@ -89,15 +89,53 @@ describe 'POST /v1/messages', ->
               favoriteBand: 'santana'
         }]
 
-      @getRule = @ruleServer
+      bRule =
+        rules:
+          add:
+            conditions:
+              all: [{
+                fact: 'device'
+                path: '.genisys.currentMeeting'
+                operator: 'exists'
+                value: true
+              },{
+                fact: 'device'
+                path: '.genisys.inSkype'
+                operator: 'notEqual'
+                value: true
+              }]
+            event:
+              type: 'meshblu'
+              params:
+                uuid: "{{data.genisys.devices.activities}}"
+                operation: 'update'
+                data:
+                  $set:
+                    "genisys.activities.startSkype.people": []
+        noevents: [ {
+          type: 'meshblu'
+          params:
+            uuid: "{{data.genisys.devices.activities}}"
+            operation: 'update'
+            data:
+              $set:
+                "genisys.activities.startSkypeAlso.people": []
+        }]
+
+      @getARule = @ruleServer
         .get '/rules/a-rule.json'
-        .reply 200, rule
+        .reply 200, aRule
+
+      @getBRule = @ruleServer
+        .get '/rules/b-rule.json'
+        .reply 200, bRule
 
       rulesetDevice =
         uuid: 'ruleset-uuid'
         type: 'meshblu:ruleset'
         rules: [
-          url: "http://localhost:#{0xdddd}/rules/a-rule.json"
+          { url: "http://localhost:#{0xdddd}/rules/a-rule.json" }
+          { url: "http://localhost:#{0xdddd}/rules/b-rule.json" }
         ]
 
       @authDevice = @meshblu
@@ -115,6 +153,7 @@ describe 'POST /v1/messages', ->
         .send {
           $set:
             "genisys.activities.startSkype.people": []
+            "genisys.activities.startSkypeAlso.people": []
         }
         .reply 204
 
@@ -152,7 +191,8 @@ describe 'POST /v1/messages', ->
       @getRulesetDevice.done()
 
     it 'should get the rule url', ->
-      @getRule.done()
+      @getARule.done()
+      @getBRule.done()
 
     it 'should update the activities device', ->
       @updateActivitiesDevice.done()
