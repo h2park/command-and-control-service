@@ -1,10 +1,16 @@
+{afterEach, beforeEach, describe, it} = global
+{expect} = require 'chai'
+sinon = require 'sinon'
+
 shmock        = require 'shmock'
 request       = require 'request'
 enableDestroy = require 'server-destroy'
 Server        = require '../../src/server'
+{clearCache}  = require '../../src/helpers/cached-request'
 
 describe 'POST /v1/messages', ->
   beforeEach (done) ->
+    clearCache()
     @meshblu = shmock 0xd00d
     enableDestroy @meshblu
 
@@ -115,8 +121,8 @@ describe 'POST /v1/messages', ->
       @messageErikDevice = @meshblu
         .post '/messages'
         .send {
-            devices: ['erik-device']
-            favoriteBand: 'santana'
+          devices: ['erik-device']
+          favoriteBand: 'santana'
         }
         .reply 204
 

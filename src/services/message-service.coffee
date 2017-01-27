@@ -1,9 +1,9 @@
 _ = require 'lodash'
-request = require 'request'
 async = require 'async'
 Meshblu = require 'meshblu-http'
 MeshbluRulesEngine = require 'meshblu-rules-engine'
 debug = require('debug')('command-and-control:message-service')
+cachedRequest = require '../helpers/cached-request'
 
 class MessageService
   create: ({ data, meshbluAuth, device }, callback) =>
@@ -20,8 +20,7 @@ class MessageService
     meshblu.device rule.uuid, (error, device) =>
       return callback error if error?
       async.map device.rules, (rule, next) =>
-        request.get rule.url, json: true, (error, response, body) =>
-          next error, body
+        cachedRequest rule.url, next
       , (error, rules) =>
         return callback error if error?
         return callback null, _.flatten rules
