@@ -31,7 +31,7 @@ class MessageService
     engine.run context, callback
 
   _doCommand: (meshblu, command, callback) =>
-    debug command
+    debug JSON.stringify(command, null, 2)
     return callback @_createError('unknown command type', 422) if command.type != 'meshblu'
 
     options = {}
@@ -47,6 +47,7 @@ class MessageService
     return callback @_createError('unsupported operation type', 422)
 
   _createError: (message, code=500) =>
+    debug message
     error = new Error message
     error.code = code
     return error
