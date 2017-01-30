@@ -9,6 +9,7 @@ class MessageService
   create: ({ data, meshbluAuth, device }, callback) =>
     { rulesets } = device
     meshblu = new Meshblu meshbluAuth
+    debug 'messageService.create'
     async.map rulesets, async.apply(@_getRuleset, meshblu), (error, rulesMap) =>
       return callback error if error?
       async.map _.flatten(rulesMap), async.apply(@_doRule, {data, device}, meshbluAuth), (error, results) =>
@@ -58,9 +59,11 @@ class MessageService
 
     if command.params.operation == 'update'
       return callback @_createError('invalid uuid', command, 422) unless command.params.uuid?
+      debug 'sending meshblu update'
       return meshblu.updateDangerously command.params.uuid, command.params.data, options, callback
 
     if command.params.operation == 'message'
+      debug 'sending meshblu message'
       return meshblu.message command.params.message, options, callback
 
     return callback @_createError('unsupported operation type', command, 422)
