@@ -9,6 +9,7 @@ class MessageController
     data = request.body
     { meshbluAuth, meshbluDevice } = request
     @messageService.create { meshbluAuth, data, device: meshbluDevice }, (error) =>
+      debug 'done messageController.create'
       return response.sendError(error) if error?
       response.sendStatus(200)
 

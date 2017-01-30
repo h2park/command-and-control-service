@@ -60,11 +60,17 @@ class MessageService
     if command.params.operation == 'update'
       return callback @_createError('invalid uuid', command, 422) unless command.params.uuid?
       debug 'sending meshblu update'
-      return meshblu.updateDangerously command.params.uuid, command.params.data, options, callback
+      return meshblu.updateDangerously command.params.uuid, command.params.data, options, (error) =>
+        debug 'done meshblu update'
+        debug {error} if error?
+        callback error
 
     if command.params.operation == 'message'
       debug 'sending meshblu message'
-      return meshblu.message command.params.message, options, callback
+      return meshblu.message command.params.message, options, (error) =>
+        debug 'done meshblu message'
+        debug {error} if error?
+        callback error
 
     return callback @_createError('unsupported operation type', command, 422)
 
