@@ -16,10 +16,7 @@ class MessageService
         return callback error if error?
         commands = _.flatten results
         commands = @_mergeCommands commands
-        async.each commands, async.apply(@_doCommand, meshblu), (error) =>
-          debug {endoGenisysMeetingUuid: _.get({data, device}, 'device.genisys.devices.endo-genisys-meeting.uuid')} if error?
-          # debug JSON.stringify({ data, device }, null, 2) if error?
-          return callback error
+        async.each commands, async.apply(@_doCommand, meshblu), callback
 
   _mergeCommands: (commands) =>
     allUpdates = []
