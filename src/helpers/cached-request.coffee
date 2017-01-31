@@ -5,7 +5,7 @@ CACHE = {
 }
 
 cachedRequest = (url, callback) =>
-  return callback null, CACHE.responses[url] if CACHE.responses[url]?
+  # return callback null, CACHE.responses[url] if CACHE.responses[url]?
 
   request.get url, json: true, (error, response, body) =>
     return callback error if error?
