@@ -41,8 +41,9 @@ class MessageService
 
     return _.union allUpdates, _.values(mergedUpdates)
 
-  _getRuleset: (meshblu, rule, callback) =>
-    meshblu.device rule.uuid, (error, device) =>
+  _getRuleset: (meshblu, ruleset, callback) =>
+    meshblu.device ruleset.uuid, (error, device) =>
+      debug ruleset.uuid, error.message if error?.code == 404
       return callback error if error?
       async.mapSeries device.rules, (rule, next) =>
         cachedRequest rule.url, next

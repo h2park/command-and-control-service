@@ -9,7 +9,10 @@ cachedRequest = (url, callback) =>
 
   request.get url, json: true, (error, response, body) =>
     return callback error if error?
-    return callback new Error "Unexpected non 2xx status code: #{response.statusCode}" unless response.statusCode < 300
+    if response.statusCode > 299
+      error = new Error "Unexpected non 2xx status code: #{response.statusCode}"
+      error.code = response.statusCode
+      return callback error
     CACHE.responses[url] = body
     return callback error, body
 
