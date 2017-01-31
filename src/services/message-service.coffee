@@ -8,6 +8,7 @@ cachedRequest = require '../helpers/cached-request'
 class MessageService
   create: ({ data, meshbluAuth, device }, callback) =>
     debug 'messageService.create'
+    debug { data, device }
     { rulesets } = device
     meshblu = new Meshblu meshbluAuth
     async.map rulesets, async.apply(@_getRuleset, meshblu), (error, rulesMap) =>
