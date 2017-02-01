@@ -50,7 +50,9 @@ class MessageService
 
   _doRule: (context, meshbluConfig, rulesConfig, callback) =>
     engine = new MeshbluRulesEngine {meshbluConfig, rulesConfig}
-    engine.run context, callback
+    engine.run context, (error, data) =>
+      debug {error, data} if error?
+      return callback error, data
 
   _doCommand: (meshblu, command, callback) =>
     return callback @_createError('unknown command type', command, 422) if command.type != 'meshblu'
