@@ -51,7 +51,7 @@ class MessageService
   _doRule: (context, meshbluConfig, rulesConfig, callback) =>
     engine = new MeshbluRulesEngine {meshbluConfig, rulesConfig}
     engine.run context, (error, data) =>
-      debug {error, data} if error?
+      debug JSON.stringify({context, rulesConfig, error, data}) if error?
       return callback error, data
 
   _doCommand: (meshblu, command, callback) =>
