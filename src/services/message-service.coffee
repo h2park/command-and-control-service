@@ -51,7 +51,7 @@ class MessageService
   _doRule: (context, meshbluConfig, rulesConfig, callback) =>
     engine = new MeshbluRulesEngine {meshbluConfig, rulesConfig}
     engine.run context, (error, data) =>
-      debug JSON.stringify({context, rulesConfig, error, data}) if error?
+      debug JSON.stringify({context, rulesConfig, error: error.stack, data}, null, 2) if error?
       return callback error, data
 
   _doCommand: (meshblu, command, callback) =>
@@ -65,14 +65,14 @@ class MessageService
       debug 'sending meshblu update'
       return meshblu.updateDangerously command.params.uuid, command.params.data, options, (error) =>
         debug 'done meshblu update'
-        debug {error} if error?
+        debug JSON.stringify({error}, null, 2) if error?
         callback error
 
     if command.params.operation == 'message'
       debug 'sending meshblu message'
       return meshblu.message command.params.message, options, (error) =>
         debug 'done meshblu message'
-        debug {error} if error?
+        debug JSON.stringify({error}, null, 2) if error?
         callback error
 
     return callback @_createError('unsupported operation type', command, 422)
