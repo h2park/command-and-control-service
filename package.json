@@ -1,6 +1,6 @@
 {
   "name": "command-and-control-service",
-  "version": "4.1.13",
+  "version": "4.1.14",
   "description": "command-and-control-service an Octoblu Service",
   "keywords": [
     "Octoblu",
@@ -46,7 +46,7 @@
     "lodash": "^4.15.0",
     "meshblu-config": "^6.0.0",
     "meshblu-http": "^9.3.0",
-    "meshblu-rules-engine": "^2.1.2",
+    "meshblu-rules-engine": "^2.1.3",
     "server-destroy": "^1.0.1"
   },
   "license": "MIT",
