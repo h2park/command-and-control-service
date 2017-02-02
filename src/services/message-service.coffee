@@ -6,17 +6,22 @@ debug = require('debug')('command-and-control:message-service')
 cachedRequest = require '../helpers/cached-request'
 
 class MessageService
-  create: ({ data, meshbluAuth, device }, callback) =>
+  constructor: ({ @data, @device, @meshbluAuth }) ->
+    { commandAndControl={} } = @device
+    { @rulesets=@device.rulesets, @errorDeviceId } = commandAndControl
+    @meshblu = new Meshblu @meshbluAuth
+
+  process: (callback) =>
     debug 'messageService.create'
-    { rulesets } = device
-    meshblu = new Meshblu meshbluAuth
-    async.map rulesets, async.apply(@_getRuleset, meshblu), (error, rulesMap) =>
-      return callback error if error?
-      async.map _.flatten(rulesMap), async.apply(@_doRule, {data, device}, meshbluAuth), (error, results) =>
-        return callback error if error?
+    done = (error) => return callback @_errorHandler(error)
+
+    async.map @rulesets, @_getRuleset, (error, rulesMap) =>
+      return done error if error?
+      async.map _.flatten(rulesMap), @_doRule, (error, results) =>
+        return done error if error?
         commands = _.flatten results
         commands = @_mergeCommands commands
-        async.each commands, async.apply(@_doCommand, meshblu), callback
+        async.each commands, @_doCommand, done
 
   _mergeCommands: (commands) =>
     allUpdates = []
@@ -38,50 +43,70 @@ class MessageService
 
     return _.union allUpdates, _.values(mergedUpdates)
 
-  _getRuleset: (meshblu, ruleset, callback) =>
-    meshblu.device ruleset.uuid, (error, device) =>
+  _getRuleset: (ruleset, callback) =>
+    @meshblu.device ruleset.uuid, (error, device) =>
       debug ruleset.uuid, error.message if error?.code == 404
-      return callback error if error?
+      return callback @_addErrorContext(error, {ruleset}) if error?
       async.mapSeries device.rules, (rule, next) =>
-        cachedRequest rule.url, next
+        cachedRequest rule.url, (error, data) =>
+          return next @_addErrorContext(error, {rule}), data
       , (error, rules) =>
-        return callback error if error?
-        return callback null, _.flatten rules
+        return callback error, _.flatten rules
 
-  _doRule: (context, meshbluConfig, rulesConfig, callback) =>
-    engine = new MeshbluRulesEngine {meshbluConfig, rulesConfig}
+  _doRule: (rulesConfig, callback) =>
+    context = {@data, @device}
+    engine = new MeshbluRulesEngine {meshbluConfig: @meshbluAuth, rulesConfig}
     engine.run context, (error, data) =>
-      debug JSON.stringify({context, rulesConfig, error: error.stack, data}, null, 2) if error?
-      return callback error, data
+      return callback @_addErrorContext(error, {rulesConfig}), data
 
-  _doCommand: (meshblu, command, callback) =>
-    return callback @_createError('unknown command type', command, 422) if command.type != 'meshblu'
+  _doCommand: (command, callback) =>
+    done = (error) => return callback @_addErrorContext(error, { command })
+    return done new Error('unsupported command type') if command.type != 'meshblu'
 
+    { params={} } = command
     options = {}
-    options.as = command.params.as if command.params.as?
+    options.as = params.as if params.as?
+    { operation } = params
 
-    if command.params.operation == 'update'
-      return callback @_createError('invalid uuid', command, 422) unless command.params.uuid?
-      debug 'sending meshblu update'
-      return meshblu.updateDangerously command.params.uuid, command.params.data, options, (error) =>
-        debug 'done meshblu update'
-        debug JSON.stringify({error}, null, 2) if error?
-        callback error
+    return @_meshbluUpdate params, options, done if operation == 'update'
+    return @_meshbluMessage params, options, done if operation == 'message'
+    return done new Error('unsupported operation type')
 
-    if command.params.operation == 'message'
-      debug 'sending meshblu message'
-      return meshblu.message command.params.message, options, (error) =>
-        debug 'done meshblu message'
-        debug JSON.stringify({error}, null, 2) if error?
-        callback error
+  _meshbluUpdate: (params, options, callback) =>
+    { uuid, data } = params
+    return callback new Error('undefined uuid') unless uuid?
+    return @meshblu.updateDangerously uuid, data, options, callback
 
-    return callback @_createError('unsupported operation type', command, 422)
+  _meshbluMessage: (params, options, callback) =>
+    { message } = params
+    return callback new Error('undefined message') unless message?
+    return @meshblu.message message, options, callback
 
-  _createError: (message, command, code=500) =>
-    debug message
-    debug JSON.stringify(command, null, 2)
-    error = new Error message
-    error.code = code
+  _addErrorContext: (error, context) =>
+    return unless error?
+    error.context ?= {}
+    error.context = _.merge error.context, context
     return error
+
+  _errorHandler: (error) =>
+    return unless error?
+    debug error.stack
+    @_sendError error
+    error.code = 422
+    return error
+
+  _sendError: (error) =>
+    return unless @errorDeviceId?
+    errorMessage =
+      devices: [ @errorDeviceId ]
+      error:
+        stack: error.stack?.split('\n')
+        context: error.context
+        code: error.code
+      input: {@data, @device}
+
+    @meshblu.message errorMessage, (error) =>
+      return unless error?
+      debug 'could not forward error message to meshblu'
 
 module.exports = MessageService

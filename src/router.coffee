@@ -1,12 +1,11 @@
 MessageController = require './controllers/message-controller'
 
 class Router
-  constructor: ({ @messageService }) ->
-    throw new Error 'Missing messageService' unless @messageService?
+  constructor: ({ @MessageService }) ->
+    throw new Error 'Missing MessageService' unless @MessageService?
 
   route: (app) =>
-    messageController = new MessageController { @messageService }
-
+    messageController = new MessageController { @MessageService }
     app.post '/v1/messages', messageController.create
 
 module.exports = Router

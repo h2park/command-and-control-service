@@ -18,9 +18,7 @@ class Server
     app.use meshbluAuth.get()
     app.use meshbluAuth.gateway()
 
-    messageService = new MessageService
-    router = new Router {@meshbluConfig, messageService}
-
+    router = new Router {@meshbluConfig, MessageService}
     router.route app
 
     @server = app.listen @port, callback
