@@ -2,8 +2,9 @@ _ = require 'lodash'
 async = require 'async'
 Meshblu = require 'meshblu-http'
 MeshbluRulesEngine = require 'meshblu-rules-engine'
-debug = require('debug')('command-and-control:message-service')
 cachedRequest = require '../helpers/cached-request'
+debug = require('debug')('command-and-control:message-service')
+debugError = require('debug')('command-and-control:user-errors')
 
 class MessageService
   constructor: ({ @data, @device, @meshbluAuth }) ->
@@ -90,13 +91,11 @@ class MessageService
 
   _errorHandler: (error) =>
     return unless error?
-    debug error.stack
     @_sendError error
     error.code = 422
     return error
 
   _sendError: (error) =>
-    return unless @errorDeviceId?
     errorMessage =
       devices: [ @errorDeviceId ]
       error:
@@ -104,6 +103,9 @@ class MessageService
         context: error.context
         code: error.code
       input: {@data, @device}
+
+    debugError JSON.stringify({errorMessage},null,2)
+    return unless @errorDeviceId?
 
     @meshblu.message errorMessage, (error) =>
       return unless error?
