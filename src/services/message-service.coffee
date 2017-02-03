@@ -102,10 +102,11 @@ class MessageService
         stack: error.stack?.split('\n')
         context: error.context
         code: error.code
-      input: {@data, @device}
+      input: {@data, deviceUuid: @device.uuid}
 
     debugError JSON.stringify({errorMessage},null,2)
     return unless @errorDeviceId?
+    errorMessage.input = {@data, @device}
 
     @meshblu.message errorMessage, (error) =>
       return unless error?
