@@ -62,7 +62,7 @@ describe 'POST /v1/messages', ->
         errorDeviceId: 'some-error-device'
 
     @aRule =
-      rules:
+      if:
         add:
           conditions:
             all: [{
@@ -84,25 +84,39 @@ describe 'POST /v1/messages', ->
               data:
                 $set:
                   "genisys.activities.startSkype.people": []
-      noevents: [ {
-        type: 'meshblu'
-        params:
-          uuid: "{{data.genisys.devices.activities}}"
-          operation: 'update'
-          data:
-            $set:
-              "genisys.activities.startSkype.people": []
-      }, {
-        type: 'meshblu'
-        params:
-          operation: 'message'
-          message:
-            devices: ['erik-device']
-            favoriteBand: 'santana'
-      }]
+      else:
+        add:
+          conditions:
+            all: [
+              fact: 'data'
+              operator: 'exists'
+              value: true
+            ]
+          event:
+            type: 'meshblu'
+            params:
+              uuid: "{{data.genisys.devices.activities}}"
+              operation: 'update'
+              data:
+                $set:
+                  "genisys.activities.startSkype.people": []
+        message:
+          conditions:
+            all: [
+              fact: 'data'
+              operator: 'exists'
+              value: true
+            ]
+          event:
+            type: 'meshblu'
+            params:
+              operation: 'message'
+              message:
+                devices: ['erik-device']
+                favoriteBand: 'santana'
 
     @bRule =
-      rules:
+      if:
         add:
           conditions:
             all: [{
@@ -124,15 +138,22 @@ describe 'POST /v1/messages', ->
               data:
                 $set:
                   "genisys.activities.startSkype.people": []
-      noevents: [ {
-        type: 'meshblu'
-        params:
-          uuid: "{{data.genisys.devices.activities}}"
-          operation: 'update'
-          data:
-            $set:
-              "genisys.activities.startSkypeAlso.people": []
-      }]
+      else:
+        set:
+          conditions:
+            all: [
+              fact: 'data'
+              operator: 'exists'
+              value: true
+            ]
+          event:
+            type: 'meshblu'
+            params:
+              uuid: "{{data.genisys.devices.activities}}"
+              operation: 'update'
+              data:
+                $set:
+                  "genisys.activities.startSkypeAlso.people": []
 
     @rulesetDevice =
       uuid: 'ruleset-uuid'
