@@ -27,8 +27,57 @@ on a Meshblu device and perform updates on another.
 
 # Getting Started
 
+1. Create a Rule file
 1. Create Ruleset device
-1. Add webhook
+1. Add webhook and properties
+
+### Create a Rule file
+
+The [meshblu-rules-engine](https://github.com/octoblu/meshblu-rules-engine) is based on processing rules from
+the [JSON Rules Engine](https://github.com/cachecontrol/json-rules-engine).
+
+Meshblu-rules-engine processes rules in the basic format of:
+
+```json
+{
+  "if": {...rules...},
+  "else": {...rules...}
+}
+```
+
+where the "else" block is processed only if no conditions are true in the "if" block.
+
+See an example in [smartspaces-core-rules](https://github.com/octoblu/smartspaces-core-rules/blob/master/hue-button-start-meeting-or-skype/action.json).
+
+Events should be in format:
+
+```json
+{
+  "type": "meshblu",
+  "params": {
+    "operation": "message",
+    "as": optional,
+    "message": {
+      "devices": [ ... ],
+      ...
+    }
+  }
+}
+
+or
+
+{
+  "type": "meshblu",
+  "params": {
+    "operation": "update",
+    "as": optional,
+    "uuid": required,
+    "data": {
+      ...
+    }
+  }
+}  
+```
 
 ### Create Ruleset Device
 Using the command and control system requires a new Meshblu device called the `Ruleset`. The `Ruleset`
@@ -39,18 +88,15 @@ is a device that contains a list of URLs that point to the various rules that wi
 {
   "name": "Ruleset",
   "type": "meshblu:ruleset",
-  "rules": {
-    "start-skype": {
-      "key": "start-skype",
-      "url": "https://raw.githubusercontent.com/octoblu/smartspaces-core-rules/master/start-skype/action.json"
+  "rules": [
+    {
+      "url": "https://raw.githubusercontent.com/octoblu/smartspaces-core-rules/master/hue-button-start-meeting-or-skype/action.json"
     }
-  }
+  ]
 }
 ```
 
-See [meshblu-rules-engine](https://github.com/octoblu/meshblu-rules-engine) for the rules syntax.
-
-### Add Webhook
+### Add Webhook and properties
 
 On the device that will have the rules applied to it, you will need to set up a webhook to forward events to the command and control service.
 
@@ -86,24 +132,22 @@ On the device that will have the rules applied to it, you will need to set up a 
 }
 ```
 
+The webhooked device should also be configured with a "commandAndControl.rulesets" property to point to the newly created Ruleset device:
 
-# Usage
-
-When the rules are applied to the an update may be applied to another device as a result.
-
-*Example Output*
 ```json
 {
-  "uuid": "some-skype-uuid",
-  "update": {
-    "$set": {
-      "inSkype": true
-    }
+  "commandAndControl": {
+    "rulesets": [
+      {
+        "uuid": rule-set-device-uuuid
+      }
+    ],
+    "errorDeviceId": error-device-uuid
   }
 }
 ```
 
-The update will be applied to the device with uuid `some-skype-uuid` and will change the `inSkype` property to `true`.
+An optional "errorDeviceId" property will forward errors from the command-and-control-service to the error device.
 
 ## Install
 
