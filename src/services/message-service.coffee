@@ -58,7 +58,7 @@ class MessageService
     context = {@data, @device}
     engine = new MeshbluRulesEngine {meshbluConfig: @meshbluAuth, rulesConfig}
     engine.run context, (error, data) =>
-      return callback @_addErrorContext(error, {rulesConfig}), data
+      return callback @_addErrorContext(error, {rulesConfig, @data, @device}), data
 
   _doCommand: (command, callback) =>
     done = (error) => return callback @_addErrorContext(error, { command })
