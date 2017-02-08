@@ -1505,18 +1505,7 @@ meshblu-encryption@^2.0.1:
     lodash "^4.6.1"
     node-rsa "^0.3.2"
 
-meshblu-http@^9.3.0:
-  version "9.3.0"
-  resolved "https://registry.yarnpkg.com/meshblu-http/-/meshblu-http-9.3.0.tgz#d5a8853761d723845bdbaddc6e38b3f9e5680854"
-  dependencies:
-    coffee-script "^1.9.1"
-    debug "^2.1.3"
-    json-stable-stringify "^1.0.0"
-    lodash "^4.13.1"
-    node-rsa "^0.4.2"
-    request "^2.72.0"
-
-meshblu-http@^9.4.0:
+meshblu-http@^9.3.0, meshblu-http@^9.4.0:
   version "9.4.0"
   resolved "https://registry.yarnpkg.com/meshblu-http/-/meshblu-http-9.4.0.tgz#d958d074d0168f306d675da812729d60f4a39a94"
   dependencies:
@@ -1536,9 +1525,9 @@ meshblu-json-schema-resolver@^1.2.1:
     lodash "^4.13.1"
     url-parse "^1.1.1"
 
-meshblu-rules-engine@^2.2.0:
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/meshblu-rules-engine/-/meshblu-rules-engine-2.2.0.tgz#a03d78de55216063ac7ae14800db90e1a1225651"
+meshblu-rules-engine@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/meshblu-rules-engine/-/meshblu-rules-engine-3.0.0.tgz#9730e76227260bb42527ea321b4183d51b0a5771"
   dependencies:
     christacheio "^3.1.0"
     fs-cson "^0.3.2"

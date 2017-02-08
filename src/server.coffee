@@ -1,6 +1,5 @@
 enableDestroy      = require 'server-destroy'
 octobluExpress     = require 'express-octoblu'
-MeshbluAuth        = require 'express-meshblu-auth'
 Router             = require './router'
 MessageService     = require './services/message-service'
 
@@ -14,9 +13,6 @@ class Server
   run: (callback) =>
     app = octobluExpress({ @logFn, @disableLogging })
 
-    meshbluAuth = new MeshbluAuth @meshbluConfig
-    app.use meshbluAuth.get()
-    app.use meshbluAuth.gateway()
 
     router = new Router {@meshbluConfig, MessageService}
     router.route app

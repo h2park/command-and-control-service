@@ -1,11 +1,22 @@
+MeshbluAuth        = require 'express-meshblu-auth'
+CacheController = require './controllers/cache-controller'
 MessageController = require './controllers/message-controller'
 
 class Router
-  constructor: ({ @MessageService }) ->
+  constructor: ({ @meshbluConfig, @MessageService }) ->
     throw new Error 'Missing MessageService' unless @MessageService?
 
   route: (app) =>
+    meshbluAuth = new MeshbluAuth @meshbluConfig
+    cacheController = new CacheController
     messageController = new MessageController { @MessageService }
+
+    # Unauthenticated requests
+    app.delete '/cache', cacheController.delete
+
+    # Authenticated requests
+    app.use meshbluAuth.get()
+    app.use meshbluAuth.gateway()
     app.post '/v1/messages', messageController.create
 
 module.exports = Router
