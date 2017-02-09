@@ -18,7 +18,7 @@ class MessageService
 
     async.map @rulesets, @_getRuleset, (error, rulesMap) =>
       return done error if error?
-      async.map _.flatten(rulesMap), @_doRule, (error, results) =>
+      async.map _.compact(_.flatten(rulesMap)), @_doRule, (error, results) =>
         return done error if error?
         commands = _.flatten results
         commands = @_mergeCommands commands
@@ -45,6 +45,7 @@ class MessageService
     return _.union allUpdates, _.values(mergedUpdates)
 
   _getRuleset: (ruleset, callback) =>
+    return callback() unless ruleset.uuid?
     @meshblu.device ruleset.uuid, (error, device) =>
       debug ruleset.uuid, error.message if error?.code == 404
       return callback @_addErrorContext(error, {ruleset}) if error?
