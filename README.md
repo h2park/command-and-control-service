@@ -142,12 +142,18 @@ The webhooked device should also be configured with a "commandAndControl.ruleset
         "uuid": rule-set-device-uuuid
       }
     ],
-    "errorDeviceId": error-device-uuid
+    "errorDevice": {
+      "uuid": "error-device-uuid",
+      "logLevel": "error"
+    }
   }
 }
 ```
 
-An optional "errorDeviceId" property will forward errors from the command-and-control-service to the error device.
+An optional "errorDevice" property will forward errors from the command-and-control-service to the error device. The property `logLevel` can be one of `error`/`info`, and defaults to `error`. When set to `error`, the device will only be notified about rule enforcements that resulted in an error. When set to `info`, all rule enforcements will be sent to the device.
+
+Note: Previously, there was an `errorDeviceId` property that could be used to register a device for update notifications. This property has been deprecated, and will result in a deprecation notice being sent to that device until March 1st 2017, when it will ignored entirely.
+
 
 ## Install
 

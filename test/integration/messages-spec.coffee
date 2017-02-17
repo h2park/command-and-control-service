@@ -10,15 +10,17 @@ Server        = require '../../src/server'
 _ = require 'lodash'
 
 describe 'POST /v1/messages', ->
-
   beforeEach (done) ->
     clearCache()
     @meshblu = shmock 0xd00d, [
       (req, res, next) =>
         { url, method, body } = req
-        if url=='/messages' && method=='POST' && _.isEqual(body.devices, ['some-error-device'])
+        if url=='/messages' && method=='POST' && _.isEqual(body.devices, ['deprecated-error-device'])
+          @deprecatedErrorMessage = body
+          return res.send(204)
+        if url=='/messages' && method=='POST' && _.isEqual(body.devices, ['error-device'])
           @errorMessage = body
-          return res.sendStatus(204)
+          return res.send(204)
         next()
     ]
     enableDestroy @meshblu
@@ -49,7 +51,7 @@ describe 'POST /v1/messages', ->
     @server.destroy()
 
   beforeEach ->
-    @errorMessage = undefined
+    @deprecatedErrorMessage = undefined
 
     @userAuth = new Buffer('room-group-uuid:room-group-token').toString 'base64'
 
@@ -59,7 +61,9 @@ describe 'POST /v1/messages', ->
         uuid: 'ruleset-uuid'
       ]
       commandAndControl:
-        errorDeviceId: 'some-error-device'
+        errorDeviceId: 'deprecated-error-device'
+        errorDevice:
+          uuid: 'error-device'
 
     @aRule =
       if:
@@ -229,8 +233,14 @@ describe 'POST /v1/messages', ->
     it 'should return a 200', ->
       expect(@response.statusCode).to.equal 200
 
+    it 'should have a @deprecatedErrorMessage', ->
+      expect(@deprecatedErrorMessage).to.have.property 'error'
+      expect(@deprecatedErrorMessage.error.deprecation).to.deep.equal(
+        'errorDeviceId has been deprecated, and will be removed on March 1st, 2017. Please use errorDevice.uuid instead'
+      )
+
     it 'should not have an @errorMessage', ->
-      expect(@errorMessage).to.not.be.defined
+      expect(@errorMessage).not.to.exist
 
     it 'should auth the request with meshblu', ->
       @authDevice.done()
@@ -248,6 +258,17 @@ describe 'POST /v1/messages', ->
     it 'should message Erik about his favorite band', ->
       @messageErikDevice.done()
 
+  describe 'When everything works and the logLevel is "info"', ->
+    beforeEach (done) ->
+      @roomGroupDevice.commandAndControl.errorDevice.logLevel = 'info'
+      @performRequest done
+
+    it 'should return a 200', ->
+      expect(@response.statusCode).to.equal 200
+
+    it 'should log an errorMessage', ->
+      expect(@errorMessage).to.exist
+
   describe 'When everything works and we have no error message device', ->
     beforeEach (done) ->
       delete @roomGroupDevice.commandAndControl
@@ -264,6 +285,13 @@ describe 'POST /v1/messages', ->
     it 'should return a 422', ->
       expect(@response.statusCode).to.equal 422
 
+    it 'should have a @deprecatedErrorMessage', ->
+      expect(@deprecatedErrorMessage).to.exist
+      expect(@deprecatedErrorMessage.error).to.exist
+      expect(@deprecatedErrorMessage.error.deprecation).to.deep.equal(
+        'errorDeviceId has been deprecated, and will be removed on March 1st, 2017. Please use errorDevice.uuid instead'
+      )
+
     it 'should contain the ruleset uuid in the error message', ->
       expect(@errorMessage.error.context).to.deep.equal ruleset: uuid: 'unknown-uuid'
 
@@ -276,8 +304,11 @@ describe 'POST /v1/messages', ->
     it 'should return a 422', ->
       expect(@response.statusCode).to.equal 422
 
+    it 'should not have a @deprecatedErrorMessage', ->
+      expect(@deprecatedErrorMessage).not.to.exist
+
     it 'should have no error message', ->
-      expect(@errorMessage).to.not.exist
+      expect(@deprecatedErrorMessage).to.not.exist
 
   describe 'When we have an invalid rule in the ruleSet', ->
     beforeEach (done) ->
@@ -287,6 +318,13 @@ describe 'POST /v1/messages', ->
 
     it 'should return a 422', ->
       expect(@response.statusCode).to.equal 422
+
+    it 'should have a @deprecatedErrorMessage', ->
+      expect(@deprecatedErrorMessage).to.exist
+      expect(@deprecatedErrorMessage.error).to.exist
+      expect(@deprecatedErrorMessage.error.deprecation).to.deep.equal(
+        'errorDeviceId has been deprecated, and will be removed on March 1st, 2017. Please use errorDevice.uuid instead'
+      )
 
     it 'should contain the rule url in the error message', ->
       expect(@errorMessage.error.context).to.deep.equal rule: @badRule
@@ -299,6 +337,13 @@ describe 'POST /v1/messages', ->
     it 'should return a 422', ->
       expect(@response.statusCode).to.equal 422
 
+    it 'should have a @deprecatedErrorMessage', ->
+      expect(@deprecatedErrorMessage).to.exist
+      expect(@deprecatedErrorMessage.error).to.exist
+      expect(@deprecatedErrorMessage.error.deprecation).to.deep.equal(
+        'errorDeviceId has been deprecated, and will be removed on March 1st, 2017. Please use errorDevice.uuid instead'
+      )
+
     it 'should reference the failed command in the error message', ->
       expect(@errorMessage.error.context.command).to.exist
 
@@ -309,6 +354,13 @@ describe 'POST /v1/messages', ->
 
     it 'should return a 422', ->
       expect(@response.statusCode).to.equal 422
+
+    it 'should have a @deprecatedErrorMessage', ->
+      expect(@deprecatedErrorMessage).to.exist
+      expect(@deprecatedErrorMessage.error).to.exist
+      expect(@deprecatedErrorMessage.error.deprecation).to.deep.equal(
+        'errorDeviceId has been deprecated, and will be removed on March 1st, 2017. Please use errorDevice.uuid instead'
+      )
 
     it 'should reference the failed command in the error message', ->
       expect(@errorMessage.error.context.command).to.exist

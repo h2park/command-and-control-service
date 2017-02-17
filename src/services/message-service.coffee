@@ -8,21 +8,24 @@ debugError = require('debug')('command-and-control:user-errors')
 
 class MessageService
   constructor: ({ @data, @device, @meshbluAuth }) ->
-    { commandAndControl={} } = @device
-    { @rulesets=@device.rulesets, @errorDeviceId } = commandAndControl
+    commandAndControl = _.get @device, 'commandAndControl', {}
+    @errorDevice = commandAndControl.errorDevice
+    @deprecatedErrorDeviceId = commandAndControl.errorDeviceId
+    @rulesets ?= commandAndControl.rulesets ? @device.rulesets
     @meshblu = new Meshblu @meshbluAuth
 
   process: (callback) =>
     debug 'messageService.create'
     done = (error) => return callback @_errorHandler(error)
 
-    async.map @rulesets, @_getRuleset, (error, rulesMap) =>
-      return done error if error?
-      async.map _.compact(_.flatten(rulesMap)), @_doRule, (error, results) =>
+    @_sendErrorDeprecation =>
+      async.map @rulesets, @_getRuleset, (error, rulesMap) =>
         return done error if error?
-        commands = _.flatten results
-        commands = @_mergeCommands commands
-        async.each commands, @_doCommand, done
+        async.map _.compact(_.flatten(rulesMap)), @_doRule, (error, results) =>
+          return done error if error?
+          commands = _.flatten results
+          commands = @_mergeCommands commands
+          async.each commands, @_doCommand, done
 
   _mergeCommands: (commands) =>
     allUpdates = []
@@ -59,13 +62,14 @@ class MessageService
     context = {@data, @device}
     engine = new MeshbluRulesEngine {meshbluConfig: @meshbluAuth, rulesConfig}
     engine.run context, (error, data) =>
+      @_logInfo {rulesConfig, @data, @device}
       return callback @_addErrorContext(error, {rulesConfig, @data, @device}), data
 
   _doCommand: (command, callback) =>
     done = (error) => return callback @_addErrorContext(error, { command })
     return done new Error('unsupported command type') if command.type != 'meshblu'
 
-    { params={} } = command
+    params  = _.get command, 'params', {}
     options = {}
     options.as = params.as if params.as?
     { operation } = params
@@ -96,9 +100,21 @@ class MessageService
     error.code = 422
     return error
 
+  _logInfo: ({rulesConfig, data, device}) =>
+    return unless @errorDevice?
+    return unless @errorDevice.logLevel == 'info'
+
+    message =
+      devices: [ @errorDevice.uuid ]
+      input: {data, deviceUuid: @device.uuid, device, rulesConfig}
+
+    @meshblu.message message, (error) =>
+      return unless error?
+      debug 'could not forward info message to meshblu'
+
   _sendError: (error) =>
     errorMessage =
-      devices: [ @errorDeviceId ]
+      devices: [ @errorDevice?.uuid ]
       error:
         stack: error.stack?.split('\n')
         context: error.context
@@ -106,11 +122,25 @@ class MessageService
       input: {@data, deviceUuid: @device.uuid}
 
     debugError JSON.stringify({errorMessage},null,2)
-    return unless @errorDeviceId?
+    return unless @errorDevice?
     errorMessage.input = {@data, @device}
 
     @meshblu.message errorMessage, (error) =>
       return unless error?
       debug 'could not forward error message to meshblu'
+
+  _sendErrorDeprecation: (callback) =>
+    return callback() unless @deprecatedErrorDeviceId?
+
+    errorMessage =
+      devices: [ @deprecatedErrorDeviceId ]
+      error:
+        deprecation:
+          'errorDeviceId has been deprecated, and will be removed on March 1st, 2017. Please use errorDevice.uuid instead'
+
+    @meshblu.message errorMessage, (error) =>
+      return callback() unless error?
+      debug 'could not forward error deprecation message to meshblu', error
+      callback()
 
 module.exports = MessageService
