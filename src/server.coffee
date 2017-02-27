@@ -4,15 +4,14 @@ Router             = require './router'
 MessageService     = require './services/message-service'
 
 class Server
-  constructor: ({@logFn, @disableLogging, @port, @meshbluConfig})->
+  constructor: ({@disableLogging, @port, @meshbluConfig})->
     throw new Error 'Missing meshbluConfig' unless @meshbluConfig?
 
   address: =>
     @server.address()
 
   run: (callback) =>
-    app = octobluExpress({ @logFn, @disableLogging })
-
+    app = octobluExpress({ @disableLogging })
 
     router = new Router {@meshbluConfig, MessageService}
     router.route app

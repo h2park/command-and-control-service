@@ -28,11 +28,9 @@ describe 'POST /v1/messages', ->
     @ruleServer = shmock 0xdddd
     enableDestroy @ruleServer
 
-    @logFn = sinon.spy()
     serverOptions =
       port: undefined,
       disableLogging: true
-      logFn: @logFn
       meshbluConfig:
         hostname: 'localhost'
         protocol: 'http'
