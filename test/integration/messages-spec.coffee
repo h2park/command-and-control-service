@@ -1,6 +1,5 @@
 {afterEach, beforeEach, describe, it} = global
 {expect} = require 'chai'
-sinon = require 'sinon'
 
 shmock        = require 'shmock'
 request       = require 'request'
@@ -15,9 +14,6 @@ describe 'POST /v1/messages', ->
     @meshblu = shmock 0xd00d, [
       (req, res, next) =>
         { url, method, body } = req
-        if url=='/messages' && method=='POST' && _.isEqual(body.devices, ['deprecated-error-device'])
-          @deprecatedErrorMessage = body
-          return res.send(204)
         if url=='/messages' && method=='POST' && _.isEqual(body.devices, ['error-device'])
           @errorMessage = body
           return res.send(204)
@@ -49,8 +45,6 @@ describe 'POST /v1/messages', ->
     @server.destroy()
 
   beforeEach ->
-    @deprecatedErrorMessage = undefined
-
     @userAuth = new Buffer('room-group-uuid:room-group-token').toString 'base64'
 
     @roomGroupDevice =
@@ -59,7 +53,6 @@ describe 'POST /v1/messages', ->
         uuid: 'ruleset-uuid'
       ]
       commandAndControl:
-        errorDeviceId: 'deprecated-error-device'
         errorDevice:
           uuid: 'error-device'
 
@@ -231,12 +224,6 @@ describe 'POST /v1/messages', ->
     it 'should return a 200', ->
       expect(@response.statusCode).to.equal 200
 
-    it 'should have a @deprecatedErrorMessage', ->
-      expect(@deprecatedErrorMessage).to.have.property 'error'
-      expect(@deprecatedErrorMessage.error.deprecation).to.deep.equal(
-        'errorDeviceId has been deprecated, and will be removed on March 1st, 2017. Please use errorDevice.uuid instead'
-      )
-
     it 'should not have an @errorMessage', ->
       expect(@errorMessage).not.to.exist
 
@@ -283,13 +270,6 @@ describe 'POST /v1/messages', ->
     it 'should return a 422', ->
       expect(@response.statusCode).to.equal 422
 
-    it 'should have a @deprecatedErrorMessage', ->
-      expect(@deprecatedErrorMessage).to.exist
-      expect(@deprecatedErrorMessage.error).to.exist
-      expect(@deprecatedErrorMessage.error.deprecation).to.deep.equal(
-        'errorDeviceId has been deprecated, and will be removed on March 1st, 2017. Please use errorDevice.uuid instead'
-      )
-
     it 'should contain the ruleset uuid in the error message', ->
       expect(@errorMessage.error.context).to.deep.equal ruleset: uuid: 'unknown-uuid'
 
@@ -302,12 +282,6 @@ describe 'POST /v1/messages', ->
     it 'should return a 422', ->
       expect(@response.statusCode).to.equal 422
 
-    it 'should not have a @deprecatedErrorMessage', ->
-      expect(@deprecatedErrorMessage).not.to.exist
-
-    it 'should have no error message', ->
-      expect(@deprecatedErrorMessage).to.not.exist
-
   describe 'When we have an invalid rule in the ruleSet', ->
     beforeEach (done) ->
       @badRule = { url: "http://localhost:#{0xdddd}/rules/c-rule.json" }
@@ -316,13 +290,6 @@ describe 'POST /v1/messages', ->
 
     it 'should return a 422', ->
       expect(@response.statusCode).to.equal 422
-
-    it 'should have a @deprecatedErrorMessage', ->
-      expect(@deprecatedErrorMessage).to.exist
-      expect(@deprecatedErrorMessage.error).to.exist
-      expect(@deprecatedErrorMessage.error.deprecation).to.deep.equal(
-        'errorDeviceId has been deprecated, and will be removed on March 1st, 2017. Please use errorDevice.uuid instead'
-      )
 
     it 'should contain the rule url in the error message', ->
       expect(@errorMessage.error.context).to.deep.equal rule: @badRule
@@ -335,13 +302,6 @@ describe 'POST /v1/messages', ->
     it 'should return a 422', ->
       expect(@response.statusCode).to.equal 422
 
-    it 'should have a @deprecatedErrorMessage', ->
-      expect(@deprecatedErrorMessage).to.exist
-      expect(@deprecatedErrorMessage.error).to.exist
-      expect(@deprecatedErrorMessage.error.deprecation).to.deep.equal(
-        'errorDeviceId has been deprecated, and will be removed on March 1st, 2017. Please use errorDevice.uuid instead'
-      )
-
     it 'should reference the failed command in the error message', ->
       expect(@errorMessage.error.context.command).to.exist
 
@@ -352,13 +312,6 @@ describe 'POST /v1/messages', ->
 
     it 'should return a 422', ->
       expect(@response.statusCode).to.equal 422
-
-    it 'should have a @deprecatedErrorMessage', ->
-      expect(@deprecatedErrorMessage).to.exist
-      expect(@deprecatedErrorMessage.error).to.exist
-      expect(@deprecatedErrorMessage.error.deprecation).to.deep.equal(
-        'errorDeviceId has been deprecated, and will be removed on March 1st, 2017. Please use errorDevice.uuid instead'
-      )
 
     it 'should reference the failed command in the error message', ->
       expect(@errorMessage.error.context.command).to.exist

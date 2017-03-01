@@ -10,7 +10,6 @@ class MessageService
   constructor: ({ @data, @device, @meshbluAuth }) ->
     commandAndControl = _.get @device, 'commandAndControl', {}
     @errorDevice = commandAndControl.errorDevice
-    @deprecatedErrorDeviceId = commandAndControl.errorDeviceId
     @rulesets ?= commandAndControl.rulesets ? @device.rulesets
     @meshblu = new Meshblu @meshbluAuth
 
@@ -18,14 +17,13 @@ class MessageService
     debug 'messageService.create'
     done = (error) => return callback @_errorHandler(error)
 
-    @_sendErrorDeprecation =>
-      async.map @rulesets, @_getRuleset, (error, rulesMap) =>
+    async.map @rulesets, @_getRuleset, (error, rulesMap) =>
+      return done error if error?
+      async.map _.compact(_.flatten(rulesMap)), @_doRule, (error, results) =>
         return done error if error?
-        async.map _.compact(_.flatten(rulesMap)), @_doRule, (error, results) =>
-          return done error if error?
-          commands = _.flatten results
-          commands = @_mergeCommands commands
-          async.each commands, @_doCommand, done
+        commands = _.flatten results
+        commands = @_mergeCommands commands
+        async.each commands, @_doCommand, done
 
   _mergeCommands: (commands) =>
     allUpdates = []
@@ -128,19 +126,5 @@ class MessageService
     @meshblu.message errorMessage, (error) =>
       return unless error?
       debug 'could not forward error message to meshblu'
-
-  _sendErrorDeprecation: (callback) =>
-    return callback() unless @deprecatedErrorDeviceId?
-
-    errorMessage =
-      devices: [ @deprecatedErrorDeviceId ]
-      error:
-        deprecation:
-          'errorDeviceId has been deprecated, and will be removed on March 1st, 2017. Please use errorDevice.uuid instead'
-
-    @meshblu.message errorMessage, (error) =>
-      return callback() unless error?
-      debug 'could not forward error deprecation message to meshblu', error
-      callback()
 
 module.exports = MessageService
