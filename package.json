@@ -1,6 +1,6 @@
 {
   "name": "command-and-control-service",
-  "version": "7.0.0",
+  "version": "7.0.1",
   "description": "command-and-control-service an Octoblu Service",
   "keywords": [
     "Octoblu",
@@ -45,7 +45,7 @@
     "express-octoblu": "^3.0.0",
     "lodash": "^4.15.0",
     "meshblu-config": "^6.4.3",
-    "meshblu-http": "^9.4.0",
+    "meshblu-http": "^9.7.1",
     "meshblu-rules-engine": "^3.0.0",
     "server-destroy": "^1.0.1"
   },
