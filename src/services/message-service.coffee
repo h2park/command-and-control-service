@@ -1,10 +1,12 @@
-_ = require 'lodash'
-async = require 'async'
-Meshblu = require 'meshblu-http'
+_                  = require 'lodash'
+async              = require 'async'
+Meshblu            = require 'meshblu-http'
 MeshbluRulesEngine = require 'meshblu-rules-engine'
-cachedRequest = require '../helpers/cached-request'
-debug = require('debug')('command-and-control:message-service')
-debugError = require('debug')('command-and-control:user-errors')
+SimpleBenchmark    = require 'simple-benchmark'
+cachedRequest      = require '../helpers/cached-request'
+debug              = require('debug')('command-and-control:message-service')
+debugError         = require('debug')('command-and-control:user-errors')
+debugSlow          = require('debug')("command-and-control:slow-requests")
 
 class MessageService
   constructor: ({ @data, @device, @meshbluAuth }) ->
@@ -12,10 +14,16 @@ class MessageService
     @errorDevice = commandAndControl.errorDevice
     @rulesets ?= commandAndControl.rulesets ? @device.rulesets
     @meshblu = new Meshblu @meshbluAuth
+    @benchmarks = {}
+    @SLOW_MS = process.env.SLOW_MS || 3000
 
   process: (callback) =>
     debug 'messageService.create'
-    done = (error) => return callback @_errorHandler(error)
+    benchmark = new SimpleBenchmark { label: 'process:total' }
+    done = (error) =>
+      @benchmarks['process:total'] = "#{benchmark.elapsed()}ms"
+      @_logSlowRequest() if benchmark.elapsed() > @SLOW_MS
+      return callback @_errorHandler(error)
 
     async.map @rulesets, @_getRuleset, (error, rulesMap) =>
       return done error if error?
@@ -24,6 +32,9 @@ class MessageService
         commands = _.flatten results
         commands = @_mergeCommands commands
         async.each commands, @_doCommand, done
+
+  _logSlowRequest: =>
+    debugSlow(@meshbluAuth.uuid, 'benchmarks', @benchmarks)
 
   _mergeCommands: (commands) =>
     allUpdates = []
@@ -47,6 +58,7 @@ class MessageService
 
   _getRuleset: (ruleset, callback) =>
     return callback() unless ruleset.uuid?
+    benchmark = new SimpleBenchmark { label: 'get-ruleset' }
     @meshblu.device ruleset.uuid, (error, device) =>
       debug ruleset.uuid, error.message if error?.code == 404
       return callback @_addErrorContext(error, {ruleset}) if error?
@@ -54,17 +66,25 @@ class MessageService
         cachedRequest rule.url, (error, data) =>
           return next @_addErrorContext(error, {rule}), data
       , (error, rules) =>
+        @benchmarks["get-ruleset:#{ruleset.uuid}"] = "#{benchmark.elapsed()}ms"
         return callback error, _.flatten rules
 
   _doRule: (rulesConfig, callback) =>
+    benchmark = new SimpleBenchmark { labal: 'do-rules' }
     context = {@data, @device}
     engine = new MeshbluRulesEngine {meshbluConfig: @meshbluAuth, rulesConfig}
     engine.run context, (error, data) =>
       @_logInfo {rulesConfig, @data, @device}
+      @benchmarks["do-rules"] ?= []
+      @benchmarks["do-rules"].push "#{benchmark.elapsed()}ms"
       return callback @_addErrorContext(error, {rulesConfig, @data, @device}), data
 
   _doCommand: (command, callback) =>
-    done = (error) => return callback @_addErrorContext(error, { command })
+    benchmark = new SimpleBenchmark { label: 'do-command' }
+    done = (error) =>
+      @benchmarks["do-command"] ?= []
+      @benchmarks["do-command"].push "#{benchmark.elapsed()}ms"
+      return callback @_addErrorContext(error, { command })
     return done new Error('unsupported command type') if command.type != 'meshblu'
 
     params  = _.get command, 'params', {}
@@ -79,12 +99,19 @@ class MessageService
   _meshbluUpdate: (params, options, callback) =>
     { uuid, data } = params
     return callback new Error('undefined uuid') unless uuid?
-    return @meshblu.updateDangerously uuid, data, options, callback
+    benchmark = new SimpleBenchmark { label: "meshblu:update:#{uuid}" }
+    return @meshblu.updateDangerously uuid, data, options, (error) =>
+      @benchmarks["meshblu:update:#{uuid}"] = "#{benchmark.elapsed()}ms"
+      callback error
 
   _meshbluMessage: (params, options, callback) =>
     { message } = params
     return callback new Error('undefined message') unless message?
-    return @meshblu.message message, options, callback
+    devices = _.join message?.devices, ','
+    benchmark = new SimpleBenchmark { label: "meshblu:message:#{devices}" }
+    return @meshblu.message message, options, (error) =>
+      @benchmarks["meshblu:message:#{devices}"] = "#{benchmark.elapsed()}ms"
+      callback error
 
   _addErrorContext: (error, context) =>
     return unless error?
