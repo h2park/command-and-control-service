@@ -1,20 +1,37 @@
-request = require 'request'
+request   = require 'request'
+NodeCache = require 'node-cache'
+debug     = require('debug')('command-and-control:cache-request')
 
-CACHE = {
-  responses: {}
-}
+class CacheRequest
+  constructor: ->
+    @_cache  = new NodeCache {
+      stdTTL:      360,
+      checkperiod: 180,
+    }
 
-cachedRequest = (url, callback) =>
-  return callback null, CACHE.responses[url] if CACHE.responses[url]?
+  get: (url, callback) =>
+    debug @stats()
+    @_cache.get url, (error, result) =>
+      return callback error if error?
+      return callback null, result if result?
+      @_get url, (error, body) =>
+        return callback error if error?
+        @_cache.set url, body, (error) =>
+          callback error, body
 
-  request.get url, json: true, (error, response, body) =>
-    return callback error if error?
-    if response.statusCode > 299
-      error = new Error "Unexpected non 2xx status code: #{response.statusCode}"
-      error.code = response.statusCode
-      return callback error
-    CACHE.responses[url] = body
-    return callback error, body
+  clearCache: =>
+    @_cache.flushAll()
 
-cachedRequest.clearCache = -> CACHE.responses = {}
-module.exports = cachedRequest
+  stats: =>
+    @_cache.getStats()
+
+  _get: (url, callback) =>
+    request.get url, { gzip: true, json: true }, (error, response, body) =>
+      return callback error if error?
+      if response.statusCode > 299
+        error = new Error "Unexpected non 2xx status code: #{response.statusCode}"
+        error.code = response.statusCode
+        return callback error
+      callback null, body
+
+module.exports = new CacheRequest

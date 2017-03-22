@@ -15,6 +15,7 @@ class MessageService
     @rulesets ?= commandAndControl.rulesets ? @device.rulesets
     @meshblu = new Meshblu @meshbluAuth
     @benchmarks = {}
+    SimpleBenchmark.resetIds()
     @SLOW_MS = process.env.SLOW_MS || 3000
 
   process: (callback) =>
@@ -63,7 +64,7 @@ class MessageService
       debug ruleset.uuid, error.message if error?.code == 404
       return callback @_addErrorContext(error, {ruleset}) if error?
       async.mapSeries device.rules, (rule, next) =>
-        cachedRequest rule.url, (error, data) =>
+        cachedRequest.get rule.url, (error, data) =>
           return next @_addErrorContext(error, {rule}), data
       , (error, rules) =>
         @benchmarks["get-ruleset:#{ruleset.uuid}"] = "#{benchmark.elapsed()}ms"
