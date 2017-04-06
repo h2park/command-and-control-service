@@ -1,6 +1,7 @@
 _                  = require 'lodash'
 async              = require 'async'
 Meshblu            = require 'meshblu-http'
+MeshbluConfig      = require 'meshblu-config'
 MeshbluRulesEngine = require 'meshblu-rules-engine'
 SimpleBenchmark    = require 'simple-benchmark'
 cachedRequest      = require '../helpers/cached-request'
@@ -10,10 +11,11 @@ debugSlow          = require('debug')("command-and-control:slow-requests")
 
 class MessageService
   constructor: ({ @data, @device, @meshbluAuth }) ->
+    meshbluConfig = new MeshbluConfig().toJSON()
     commandAndControl = _.get @device, 'commandAndControl', {}
     @errorDevice = commandAndControl.errorDevice
     @rulesets ?= commandAndControl.rulesets ? @device.rulesets
-    @meshblu = new Meshblu @meshbluAuth
+    @meshblu = new Meshblu _.defaults(@meshbluAuth, meshbluConfig)
     @benchmarks = {}
     SimpleBenchmark.resetIds()
     @SLOW_MS = process.env.SLOW_MS || 3000
