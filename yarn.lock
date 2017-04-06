@@ -265,9 +265,9 @@ brackets2dots@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/brackets2dots/-/brackets2dots-1.1.0.tgz#3f3d40375fc660ce0fd004fa27d67b34f9469ac3"
 
-browser-meshblu-http@^6.5.0:
-  version "6.5.1"
-  resolved "https://registry.yarnpkg.com/browser-meshblu-http/-/browser-meshblu-http-6.5.1.tgz#579828b2b7fe91126fc3695566e6a3e53452a59e"
+browser-meshblu-http@^6.6.0:
+  version "6.6.0"
+  resolved "https://registry.yarnpkg.com/browser-meshblu-http/-/browser-meshblu-http-6.6.0.tgz#4362e9485a9cba0c2add238a481ae1e617fa4591"
   dependencies:
     btoa "^1.1.2"
     lodash "^4.17.4"
@@ -1538,24 +1538,24 @@ meshblu-http@^9.7.2, meshblu-http@^9.8.0:
     request "^2.72.0"
     srv-failover "^1.0.4"
 
-meshblu-json-schema-resolver@^2.0.4:
-  version "2.0.4"
-  resolved "https://registry.yarnpkg.com/meshblu-json-schema-resolver/-/meshblu-json-schema-resolver-2.0.4.tgz#de2f8f6723a95b8b34657283ccba5002e81844ad"
+meshblu-json-schema-resolver@^2.0.5:
+  version "2.0.5"
+  resolved "https://registry.yarnpkg.com/meshblu-json-schema-resolver/-/meshblu-json-schema-resolver-2.0.5.tgz#12e9fc288009de1d61c115207fc59c250451e33a"
   dependencies:
-    browser-meshblu-http "^6.5.0"
+    browser-meshblu-http "^6.6.0"
     json-schema-ref-parser "^3.1.2"
     lodash "^4.13.1"
     url-parse "^1.1.8"
 
-meshblu-rules-engine@^3.0.1:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/meshblu-rules-engine/-/meshblu-rules-engine-3.0.1.tgz#c1b7b0d2614fdc4258d58c68f394b78fd4970bc9"
+meshblu-rules-engine@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/meshblu-rules-engine/-/meshblu-rules-engine-3.0.2.tgz#d37fe3769da4f0f1da13e2a9ec922ebd6dedd485"
   dependencies:
     christacheio "^3.1.0"
     fs-cson "^0.3.2"
     json-rules-engine "~1.4.0"
     lodash "^4.17.4"
-    meshblu-json-schema-resolver "^2.0.4"
+    meshblu-json-schema-resolver "^2.0.5"
 
 methods@0.1.0, methods@~0.1.0:
   version "0.1.0"
