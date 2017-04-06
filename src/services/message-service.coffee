@@ -11,11 +11,12 @@ debugSlow          = require('debug')("command-and-control:slow-requests")
 
 class MessageService
   constructor: ({ @data, @device, @meshbluAuth }) ->
-    meshbluConfig = new MeshbluConfig().toJSON()
+    meshbluJSON = new MeshbluConfig().toJSON()
+    @meshbluConfig = _.defaults(@meshbluAuth, meshbluJSON)
     commandAndControl = _.get @device, 'commandAndControl', {}
     @errorDevice = commandAndControl.errorDevice
     @rulesets ?= commandAndControl.rulesets ? @device.rulesets
-    @meshblu = new Meshblu _.defaults(@meshbluAuth, meshbluConfig)
+    @meshblu = new Meshblu @meshbluConfig
     @benchmarks = {}
     SimpleBenchmark.resetIds()
     @SLOW_MS = process.env.SLOW_MS || 3000
@@ -75,7 +76,7 @@ class MessageService
   _doRule: (rulesConfig, callback) =>
     benchmark = new SimpleBenchmark { labal: 'do-rules' }
     context = {@data, @device}
-    engine = new MeshbluRulesEngine {meshbluConfig: @meshbluAuth, rulesConfig}
+    engine = new MeshbluRulesEngine {@meshbluConfig, rulesConfig}
     engine.run context, (error, data) =>
       @_logInfo {rulesConfig, @data, @device}
       @benchmarks["do-rules"] ?= []
