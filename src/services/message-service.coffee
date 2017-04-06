@@ -5,6 +5,7 @@ MeshbluConfig      = require 'meshblu-config'
 MeshbluRulesEngine = require 'meshblu-rules-engine'
 SimpleBenchmark    = require 'simple-benchmark'
 cachedRequest      = require '../helpers/cached-request'
+DeviceCache        = require '../helpers/cached-device'
 debug              = require('debug')('command-and-control:message-service')
 debugError         = require('debug')('command-and-control:user-errors')
 debugSlow          = require('debug')("command-and-control:slow-requests")
@@ -20,6 +21,7 @@ class MessageService
     @benchmarks = {}
     SimpleBenchmark.resetIds()
     @SLOW_MS = process.env.SLOW_MS || 3000
+    @deviceCache = new DeviceCache { @meshblu }
 
   process: (callback) =>
     debug 'messageService.create'
@@ -63,7 +65,7 @@ class MessageService
   _getRuleset: (ruleset, callback) =>
     return callback() unless ruleset.uuid?
     benchmark = new SimpleBenchmark { label: 'get-ruleset' }
-    @meshblu.device ruleset.uuid, (error, device) =>
+    @deviceCache.get ruleset.uuid, (error, device) =>
       debug ruleset.uuid, error.message if error?.code == 404
       return callback @_addErrorContext(error, {ruleset}) if error?
       async.mapSeries device.rules, (rule, next) =>
