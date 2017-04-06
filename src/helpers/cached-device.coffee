@@ -1,14 +1,15 @@
 request   = require 'request'
 NodeCache = require 'node-cache'
 debug     = require('debug')('command-and-control:cache-request')
+cache  = new NodeCache {
+  stdTTL:      3600,
+  checkperiod: 1800,
+}
 
 class CachedDevice
   constructor: (options={}) ->
     { @meshblu } = options
-    @_cache  = new NodeCache {
-      stdTTL:      360,
-      checkperiod: 180,
-    }
+    @_cache = cache
 
   get: (uuid, callback) =>
     debug @stats()

@@ -6,11 +6,13 @@ request       = require 'request'
 enableDestroy = require 'server-destroy'
 Server        = require '../../src/server'
 {clearCache}  = require '../../src/helpers/cached-request'
+DeviceCache   = require '../../src/helpers/cached-device'
 _ = require 'lodash'
 
 describe 'POST /v1/messages', ->
   beforeEach (done) ->
     clearCache()
+    new DeviceCache().clearCache()
     @meshblu = shmock 0xd00d, [
       (req, res, next) =>
         { url, method, body } = req
