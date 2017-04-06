@@ -8,6 +8,7 @@ class Command
       meshbluConfig:  new MeshbluConfig().toJSON()
       port:           process.env.PORT || 80
       disableLogging: process.env.DISABLE_LOGGING == "true"
+      redisUri:       process.env.REDIS_URI
     }
 
   panic: (error) =>
@@ -15,6 +16,7 @@ class Command
     process.exit 1
 
   run: =>
+    @panic(new Error('REDIS_URI is required')) unless @serverOptions.redisUri
     server = new Server @serverOptions
     server.run (error) =>
       return @panic error if error?

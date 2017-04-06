@@ -3,13 +3,15 @@ CacheController = require './controllers/cache-controller'
 MessageController = require './controllers/message-controller'
 
 class Router
-  constructor: ({ @meshbluConfig, @MessageService }) ->
+  constructor: ({ @meshbluConfig, @MessageService, @redis }) ->
     throw new Error 'Missing MessageService' unless @MessageService?
+    throw new Error 'Missing meshbluConfig' unless @meshbluConfig?
+    throw new Error 'Missing redis' unless @redis?
 
   route: (app) =>
     meshbluAuth = new MeshbluAuth @meshbluConfig
     cacheController = new CacheController
-    messageController = new MessageController { @MessageService }
+    messageController = new MessageController { @MessageService, @redis }
 
     # Unauthenticated requests
     app.delete '/cache', cacheController.delete

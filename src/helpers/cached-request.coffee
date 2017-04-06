@@ -1,29 +1,26 @@
 request   = require 'request'
-NodeCache = require 'node-cache'
 debug     = require('debug')('command-and-control:cache-request')
+_         = require 'lodash'
 
-class CacheRequest
-  constructor: ->
-    @_cache  = new NodeCache {
-      stdTTL:      360,
-      checkperiod: 180,
-    }
+class CachedRequest
+  constructor: (options={}) ->
+    { @redis } = options
+    throw new Error 'CachedRequest requires redis' unless @redis?
 
   get: (url, callback) =>
-    debug @stats()
-    @_cache.get url, (error, result) =>
+    @redis.get "cache:url:#{url}", (error, result) =>
       return callback error if error?
-      return callback null, result if result?
+      return callback null, JSON.parse(result) if result?
       @_get url, (error, body) =>
         return callback error if error?
-        @_cache.set url, body, (error) =>
+        @redis.setex "cache:url:#{url}", 300, JSON.stringify(body), (error) =>
           callback error, body
 
   clearCache: =>
-    @_cache.flushAll()
-
-  stats: =>
-    @_cache.getStats()
+    @redis.keys 'command-and-control:cache:url:*', (error, keys) =>
+      console.error error if error?
+      return if _.isEmpty keys
+      @redis.del keys
 
   _get: (url, callback) =>
     request.get url, { gzip: true, json: true }, (error, response, body) =>
@@ -34,4 +31,4 @@ class CacheRequest
         return callback error
       callback null, body
 
-module.exports = new CacheRequest
+module.exports = CachedRequest

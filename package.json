@@ -1,6 +1,6 @@
 {
   "name": "command-and-control-service",
-  "version": "7.1.4",
+  "version": "7.2.0",
   "description": "command-and-control-service an Octoblu Service",
   "keywords": [
     "Octoblu",
@@ -43,6 +43,7 @@
     "debug": "^2.6.3",
     "express-meshblu-auth": "^9.1.0",
     "express-octoblu": "^3.0.1",
+    "ioredis": "^2.5.0",
     "lodash": "^4.15.0",
     "meshblu-config": "^7.0.0",
     "meshblu-http": "^9.8.0",
@@ -64,5 +65,8 @@
     "extension": [
       ".coffee"
     ]
+  },
+  "optionalDependencies": {
+    "hiredis": "^0.5.0"
   }
 }

@@ -1,31 +1,25 @@
-request   = require 'request'
-NodeCache = require 'node-cache'
-debug     = require('debug')('command-and-control:cache-request')
-cache  = new NodeCache {
-  stdTTL:      3600,
-  checkperiod: 1800,
-}
+_ = require 'lodash'
 
 class CachedDevice
   constructor: (options={}) ->
-    { @meshblu } = options
-    @_cache = cache
+    { @meshblu, @redis } = options
+    throw new Error 'CachedDevice requires meshblu' unless @meshblu?
+    throw new Error 'CachedDevice requires redis' unless @redis?
 
   get: (uuid, callback) =>
-    debug @stats()
-    @_cache.get uuid, (error, result) =>
+    @redis.get "cache:device:#{uuid}", (error, result) =>
       return callback error if error?
-      return callback null, result if result?
+      return callback null, JSON.parse(result) if result?
       @_get uuid, (error, device) =>
         return callback error if error?
-        @_cache.set uuid, device, (error) =>
+        @redis.setex "device:#{uuid}", 300, JSON.stringify(device), (error) =>
           callback error, device
 
   clearCache: =>
-    @_cache.flushAll()
-
-  stats: =>
-    @_cache.getStats()
+    @redis.keys 'command-and-control:cache:device:*', (error, keys) =>
+      console.error error if error?
+      return if _.isEmpty keys
+      @redis.del keys
 
   _get: (uuid, callback) =>
     @meshblu.device uuid, (error, device) =>

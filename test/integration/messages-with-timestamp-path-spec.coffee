@@ -10,9 +10,9 @@ RequestCache  = require '../../src/helpers/cached-request'
 DeviceCache   = require '../../src/helpers/cached-device'
 _ = require 'lodash'
 
-describe 'POST /v1/messages', ->
+describe 'POST /v1/messages?timestampPath=meshblu.updatedAt', ->
   beforeEach (done) ->
-    @redis = new Redis 'localhost', dropBufferSupport: true
+    @redis = new Redis 'localhost', keyPrefix: 'command-and-control:', dropBufferSupport: true
     @redis.on 'ready', done
 
   beforeEach (done) ->
@@ -168,6 +168,8 @@ describe 'POST /v1/messages', ->
     @options =
       uri: '/v1/messages'
       baseUrl: "http://localhost:#{@serverPort}"
+      qs:
+        timestampPath: 'meshblu.updatedAt'
       auth:
         username: 'room-group-uuid'
         password: 'room-group-token'
@@ -176,6 +178,8 @@ describe 'POST /v1/messages', ->
         genisys:
           devices:
             activities: 'activities-device-uuid'
+        meshblu:
+          updatedAt: '2010-04-04T00:00:00Z'
 
     {@error, @response, @body} = {}
 
@@ -195,28 +199,6 @@ describe 'POST /v1/messages', ->
         .set 'Authorization', "Basic #{@userAuth}"
         .reply 200, @roomGroupDevice
 
-      @getRulesetDevice = @meshblu
-        .get '/v2/devices/ruleset-uuid'
-        .set 'Authorization', "Basic #{@userAuth}"
-        .reply 200, @rulesetDevice
-
-      @updateActivitiesDevice = @meshblu
-        .put '/v2/devices/activities-device-uuid'
-        .send {
-          $set:
-            "genisys.activities.startSkype.people": []
-            "genisys.activities.startSkypeAlso.people": []
-        }
-        .reply 204
-
-      @messageErikDevice = @meshblu
-        .post '/messages'
-        .send {
-          devices: ['erik-device']
-          favoriteBand: 'santana'
-        }
-        .reply @messageErikDeviceResponseCode
-
     @performRequest = (done) ->
       @setupShmocks()
       request.post @options, (@error, @response, @body) =>
@@ -226,102 +208,13 @@ describe 'POST /v1/messages', ->
 
   describe 'When everything works', ->
     beforeEach (done) ->
+      @redis.set 'cache:timestamp:room-group-uuid', JSON.stringify(meshblu: updatedAt: '2017-04-06T00:00:00Z'), done
+      return
+
+    beforeEach (done) ->
       @performRequest done
 
-    it 'should return a 200', ->
-      expect(@response.statusCode).to.equal 200
-
-    it 'should not have an @errorMessage', ->
+    it 'should return a 202', ->
+      expect(@response.statusCode).to.equal 202
       expect(@errorMessage).not.to.exist
-
-    it 'should auth the request with meshblu', ->
       @authDevice.done()
-
-    it 'should fetch the ruleset device', ->
-      @getRulesetDevice.done()
-
-    it 'should get the rule url', ->
-      @getARule.done()
-      @getBRule.done()
-
-    it 'should update the activities device', ->
-      @updateActivitiesDevice.done()
-
-    it 'should message Erik about his favorite band', ->
-      @messageErikDevice.done()
-
-  describe 'When everything works and the logLevel is "info"', ->
-    beforeEach (done) ->
-      @roomGroupDevice.commandAndControl.errorDevice.logLevel = 'info'
-      @performRequest done
-
-    it 'should return a 200', ->
-      expect(@response.statusCode).to.equal 200
-
-    it 'should log an errorMessage', ->
-      expect(@errorMessage).to.exist
-
-  describe 'When everything works and we have no error message device', ->
-    beforeEach (done) ->
-      delete @roomGroupDevice.commandAndControl
-      @performRequest done
-
-    it 'should return a 200', ->
-      expect(@response.statusCode).to.equal 200
-
-  describe 'When we have an invalid ruleSet uuid', ->
-    beforeEach (done) ->
-      @roomGroupDevice.rulesets = [{uuid: 'unknown-uuid'}]
-      @performRequest done
-
-    it 'should return a 422', ->
-      expect(@response.statusCode).to.equal 422
-
-    it 'should contain the ruleset uuid in the error message', ->
-      expect(@errorMessage.error.context).to.deep.equal ruleset: uuid: 'unknown-uuid'
-
-  describe 'When we have an invalid ruleSet uuid and no error message device', ->
-    beforeEach (done) ->
-      @roomGroupDevice.rulesets = [{uuid: 'unknown-uuid'}]
-      delete @roomGroupDevice.commandAndControl
-      @performRequest done
-
-    it 'should return a 422', ->
-      expect(@response.statusCode).to.equal 422
-
-  describe 'When we have an invalid rule in the ruleSet', ->
-    beforeEach (done) ->
-      @badRule = { url: "http://localhost:#{0xdddd}/rules/c-rule.json" }
-      @rulesetDevice.rules.push @badRule
-      @performRequest done
-
-    it 'should return a 422', ->
-      expect(@response.statusCode).to.equal 422
-
-    it 'should contain the rule url in the error message', ->
-      expect(@errorMessage.error.context).to.deep.equal rule: @badRule
-
-  describe 'When we update a device without a uuid', ->
-    beforeEach (done) ->
-      delete @options.json.genisys.devices.activities
-      @performRequest done
-
-    it 'should return a 422', ->
-      expect(@response.statusCode).to.equal 422
-
-    it 'should reference the failed command in the error message', ->
-      expect(@errorMessage.error.context.command).to.exist
-
-  describe 'When we message a device but get a 403', ->
-    beforeEach (done) ->
-      @messageErikDeviceResponseCode = 403
-      @performRequest done
-
-    it 'should return a 422', ->
-      expect(@response.statusCode).to.equal 422
-
-    it 'should reference the failed command in the error message', ->
-      expect(@errorMessage.error.context.command).to.exist
-
-    it 'should have a 403 code in the error', ->
-      expect(@errorMessage.error.code).to.equal 403

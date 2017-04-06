@@ -4,7 +4,7 @@ Meshblu            = require 'meshblu-http'
 MeshbluConfig      = require 'meshblu-config'
 MeshbluRulesEngine = require 'meshblu-rules-engine'
 SimpleBenchmark    = require 'simple-benchmark'
-cachedRequest      = require '../helpers/cached-request'
+RequestCache       = require '../helpers/cached-request'
 DeviceCache        = require '../helpers/cached-device'
 debug              = require('debug')('command-and-control:message-service')
 debugError         = require('debug')('command-and-control:user-errors')
@@ -12,7 +12,7 @@ debugSlow          = require('debug')("command-and-control:slow-requests")
 RefResolver        = require 'meshblu-json-schema-resolver'
 
 class MessageService
-  constructor: ({ @data, @device, @meshbluAuth }) ->
+  constructor: ({ @data, @device, @meshbluAuth, @timestampPath, @redis }) ->
     meshbluJSON = new MeshbluConfig().toJSON()
     @meshbluConfig = _.defaults(@meshbluAuth, meshbluJSON)
     commandAndControl = _.get @device, 'commandAndControl', {}
@@ -22,7 +22,8 @@ class MessageService
     @benchmarks = {}
     SimpleBenchmark.resetIds()
     @SLOW_MS = process.env.SLOW_MS || 3000
-    @deviceCache = new DeviceCache { @meshblu }
+    @deviceCache = new DeviceCache { @meshblu, @redis }
+    @requestCache = new RequestCache { @redis }
     @resolver = new RefResolver { @meshbluConfig }
 
   resolve: (callback) =>
@@ -31,24 +32,45 @@ class MessageService
 
   process: (callback) =>
     debug 'messageService.create'
-    benchmark = new SimpleBenchmark { label: 'process:total' }
-    done = (error) =>
-      @benchmarks['process:total'] = "#{benchmark.elapsed()}ms"
-      @_logSlowRequest() if benchmark.elapsed() > @SLOW_MS
-      return callback @_errorHandler(error)
-
-    return done() if _.isEmpty @rulesets
-
-    @resolve (error) =>
+    @_isFutureTimestamp (error, canProcess) =>
       return callback error if error?
+      unless canProcess
+        error = new Error 'Refusing to process older message'
+        error.code = 202
+        return callback error
+      benchmark = new SimpleBenchmark { label: 'process:total' }
+      done = (error) =>
+        @benchmarks['process:total'] = "#{benchmark.elapsed()}ms"
+        @_logSlowRequest() if benchmark.elapsed() > @SLOW_MS
+        return callback @_errorHandler(error)
 
-      async.map @rulesets, @_getRuleset, (error, rulesMap) =>
-        return done error if error?
-        async.map _.compact(_.flatten(rulesMap)), @_doRule, (error, results) =>
+      return done() if _.isEmpty @rulesets
+
+      @resolve (error) =>
+        return callback error if error?
+
+        async.map @rulesets, @_getRuleset, (error, rulesMap) =>
           return done error if error?
-          commands = _.flatten results
-          commands = @_mergeCommands commands
-          async.each commands, @_doCommand, done
+          async.map _.compact(_.flatten(rulesMap)), @_doRule, (error, results) =>
+            return done error if error?
+            commands = _.flatten results
+            commands = @_mergeCommands commands
+            async.each commands, @_doCommand, done
+
+  _isFutureTimestamp: (callback) =>
+    return callback null, true unless @timestampPath?
+    currentTimestamp = _.get @data, @timestampPath
+    return callback null, true unless currentTimestamp?
+    @redis.get "cache:timestamp:#{@device.uuid}", (error, data) =>
+      return callback error if error?
+      try
+        data = JSON.parse data
+      catch error
+        return callback null, true
+
+      previousTimestamp = _.get data, @timestampPath
+      return callback null, true unless previousTimestamp?
+      return callback null, currentTimestamp > previousTimestamp
 
   _logSlowRequest: =>
     debugSlow(@meshbluAuth.uuid, 'benchmarks', @benchmarks)
@@ -80,7 +102,7 @@ class MessageService
       debug ruleset.uuid, error.message if error?.code == 404
       return callback @_addErrorContext(error, {ruleset}) if error?
       async.mapSeries device.rules, (rule, next) =>
-        cachedRequest.get rule.url, (error, data) =>
+        @requestCache.get rule.url, (error, data) =>
           return next @_addErrorContext(error, {rule}), data
       , (error, rules) =>
         @benchmarks["get-ruleset:#{ruleset.uuid}"] = "#{benchmark.elapsed()}ms"
