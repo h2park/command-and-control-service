@@ -37,6 +37,8 @@ class MessageService
       @_logSlowRequest() if benchmark.elapsed() > @SLOW_MS
       return callback @_errorHandler(error)
 
+    return done() if _.isEmpty @rulesets
+
     @resolve (error) =>
       return callback error if error?
 
