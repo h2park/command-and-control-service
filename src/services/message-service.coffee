@@ -9,6 +9,7 @@ DeviceCache        = require '../helpers/cached-device'
 debug              = require('debug')('command-and-control:message-service')
 debugError         = require('debug')('command-and-control:user-errors')
 debugSlow          = require('debug')("command-and-control:slow-requests")
+RefResolver        = require 'meshblu-json-schema-resolver'
 
 class MessageService
   constructor: ({ @data, @device, @meshbluAuth }) ->
@@ -22,6 +23,11 @@ class MessageService
     SimpleBenchmark.resetIds()
     @SLOW_MS = process.env.SLOW_MS || 3000
     @deviceCache = new DeviceCache { @meshblu }
+    @resolver = new RefResolver { @meshbluConfig }
+
+  resolve: (callback) =>
+    @resolver.resolve @device, (error, @device) =>
+      callback error
 
   process: (callback) =>
     debug 'messageService.create'
@@ -31,13 +37,16 @@ class MessageService
       @_logSlowRequest() if benchmark.elapsed() > @SLOW_MS
       return callback @_errorHandler(error)
 
-    async.map @rulesets, @_getRuleset, (error, rulesMap) =>
-      return done error if error?
-      async.map _.compact(_.flatten(rulesMap)), @_doRule, (error, results) =>
+    @resolve (error) =>
+      return callback error if error?
+
+      async.map @rulesets, @_getRuleset, (error, rulesMap) =>
         return done error if error?
-        commands = _.flatten results
-        commands = @_mergeCommands commands
-        async.each commands, @_doCommand, done
+        async.map _.compact(_.flatten(rulesMap)), @_doRule, (error, results) =>
+          return done error if error?
+          commands = _.flatten results
+          commands = @_mergeCommands commands
+          async.each commands, @_doCommand, done
 
   _logSlowRequest: =>
     debugSlow(@meshbluAuth.uuid, 'benchmarks', @benchmarks)
