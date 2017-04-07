@@ -10,6 +10,7 @@ debug              = require('debug')('command-and-control:message-service')
 debugError         = require('debug')('command-and-control:user-errors')
 debugSlow          = require('debug')("command-and-control:slow-requests")
 RefResolver        = require 'meshblu-json-schema-resolver'
+Redlock            = require 'redlock'
 
 class MessageService
   constructor: ({ @data, @device, @meshbluAuth, @timestampPath, @redis }) ->
@@ -25,6 +26,7 @@ class MessageService
     @deviceCache = new DeviceCache { @meshblu, @redis }
     @requestCache = new RequestCache { @redis }
     @resolver = new RefResolver { @meshbluConfig }
+    @redlock = new Redlock [@redis], retryCount: 20, retryDelay: 100
 
   resolve: (callback) =>
     @resolver.resolve @device, (error, @device) =>
@@ -32,38 +34,45 @@ class MessageService
 
   process: (callback) =>
     debug 'messageService.create'
-    @_isFutureTimestamp (error, canProcess) =>
-      return callback error if error?
-      unless canProcess
-        error = new Error 'Refusing to process older message'
-        error.code = 202
-        return callback error
-      benchmark = new SimpleBenchmark { label: 'process:total' }
-      done = (error) =>
-        @benchmarks['process:total'] = "#{benchmark.elapsed()}ms"
-        @_logSlowRequest() if benchmark.elapsed() > @SLOW_MS
-        return callback @_errorHandler(error)
+    benchmark = new SimpleBenchmark { label: 'process:total' }
 
-      return done() if _.isEmpty @rulesets
-
-      @resolve (error) =>
-        return callback error if error?
-
-        async.map @rulesets, @_getRuleset, (error, rulesMap) =>
-          return done error if error?
-          async.map _.compact(_.flatten(rulesMap)), @_doRule, (error, results) =>
-            return done error if error?
-            commands = _.flatten results
-            commands = @_mergeCommands commands
-            async.each commands, @_doCommand, done
-
-  _isFutureTimestamp: (callback) =>
-    return callback null, true unless @timestampPath?
-    currentTimestamp = _.get @data, @timestampPath
-    return callback null, true unless currentTimestamp?
     uuid = @device.uuid
     route = _.first _.get(@data, 'metadata.route', [])
     uuid = route.from unless _.isEmpty route
+
+    @redlock.lock "lock:#{uuid}", 10000, (error, lock) =>
+      return callback error if error?
+      unlockCallback = (error) =>
+        lock.unlock()
+        @benchmarks['process:total'] = "#{benchmark.elapsed()}ms"
+        @_logSlowRequest() if benchmark.elapsed() > @SLOW_MS
+        return callback error
+
+      @_isFutureTimestamp { uuid }, (error, canProcess) =>
+        return unlockCallback error if error?
+        unless canProcess
+          error = new Error 'Refusing to process older message'
+          error.code = 202
+          return unlockCallback error
+
+        return unlockCallback() if _.isEmpty @rulesets
+
+        @resolve (error) =>
+          return unlockCallback error if error?
+
+          async.map @rulesets, @_getRuleset, (error, rulesMap) =>
+            return unlockCallback @_errorHandler(error) if error?
+            async.map _.compact(_.flatten(rulesMap)), @_doRule, (error, results) =>
+              return unlockCallback @_errorHandler(error) if error?
+              commands = _.flatten results
+              commands = @_mergeCommands commands
+              async.each commands, @_doCommand, (error) =>
+                unlockCallback @_errorHandler(error)
+
+  _isFutureTimestamp: ({ uuid }, callback) =>
+    return callback null, true unless @timestampPath?
+    currentTimestamp = _.get @data, @timestampPath
+    return callback null, true unless currentTimestamp?
     @redis.get "cache:timestamp:#{uuid}", (error, data) =>
       return callback error if error?
       try
