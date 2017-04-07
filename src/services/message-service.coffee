@@ -43,10 +43,10 @@ class MessageService
     @redlock.lock "lock:#{uuid}", 10000, (error, lock) =>
       return callback error if error?
       unlockCallback = (error) =>
-        lock.unlock()
-        @benchmarks['process:total'] = "#{benchmark.elapsed()}ms"
-        @_logSlowRequest() if benchmark.elapsed() > @SLOW_MS
-        return callback error
+        lock.unlock =>
+          @benchmarks['process:total'] = "#{benchmark.elapsed()}ms"
+          @_logSlowRequest() if benchmark.elapsed() > @SLOW_MS
+          return callback error
 
       @_isFutureTimestamp { uuid }, (error, canProcess) =>
         return unlockCallback error if error?
