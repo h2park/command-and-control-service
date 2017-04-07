@@ -49,7 +49,7 @@ class MessageService
           return callback error
 
       @_isFutureTimestamp { uuid }, (error, canProcess) =>
-        return unlockCallback error if error?
+        return unlockCallback @_errorHandler(error) if error?
         unless canProcess
           error = new Error 'Refusing to process older message'
           error.code = 202
@@ -58,7 +58,7 @@ class MessageService
         return unlockCallback() if _.isEmpty @rulesets
 
         @resolve (error) =>
-          return unlockCallback error if error?
+          return unlockCallback @_errorHandler(error) if error?
 
           async.map @rulesets, @_getRuleset, (error, rulesMap) =>
             return unlockCallback @_errorHandler(error) if error?
