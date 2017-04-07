@@ -174,12 +174,13 @@ describe 'POST /v1/messages?timestampPath=meshblu.updatedAt', ->
         username: 'room-group-uuid'
         password: 'room-group-token'
       json:
-        uuid: 'room-uuid'
-        genisys:
-          devices:
-            activities: 'activities-device-uuid'
-        meshblu:
-          updatedAt: '2010-04-04T00:00:00Z'
+        data:
+          uuid: 'room-uuid'
+          genisys:
+            devices:
+              activities: 'activities-device-uuid'
+          meshblu:
+            updatedAt: '2010-04-04T00:00:00Z'
 
     {@error, @response, @body} = {}
 
@@ -208,13 +209,14 @@ describe 'POST /v1/messages?timestampPath=meshblu.updatedAt', ->
 
   describe 'When everything works', ->
     beforeEach (done) ->
-      @redis.set 'cache:timestamp:room-group-uuid', JSON.stringify(data: meshblu: updatedAt: '2017-04-06T00:00:00Z'), done
+      @redis.set 'cache:timestamp:room-group-uuid', JSON.stringify('2017-04-06T00:00:00Z'), done
       return
 
     beforeEach (done) ->
       @performRequest done
 
     it 'should return a 202', ->
+      console.log @response.body if @errorMessage?
       expect(@response.statusCode).to.equal 202
       expect(@errorMessage).not.to.exist
       @authDevice.done()

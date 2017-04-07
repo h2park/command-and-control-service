@@ -72,20 +72,19 @@ class MessageService
 
   _isFutureTimestamp: ({ uuid }, callback) =>
     return callback null, true unless @timestampPath?
-    currentTimestamp = _.get @data, @timestampPath
+    currentTimestamp = _.get @data, "data.#{@timestampPath}"
     return callback null, true unless currentTimestamp?
-    @redis.get "cache:timestamp:#{uuid}", (error, data) =>
+    @redis.get "cache:timestamp:#{uuid}", (error, previousTimestamp) =>
       return callback error if error?
       try
-        data = JSON.parse data
+        previousTimestamp = JSON.parse previousTimestamp if previousTimestamp?
       catch error
-        return callback null, true
+        # ignore
 
-      previousTimestamp = _.get data, "data.#{@timestampPath}"
-      return callback null, true unless previousTimestamp?
-      isFuture = currentTimestamp > previousTimestamp
+      isFuture = true
+      isFuture = currentTimestamp > previousTimestamp if previousTimestamp?
       return callback null, false unless isFuture
-      @redis.set "cache:timestamp:#{uuid}", JSON.stringify(@data), (error) =>
+      @redis.set "cache:timestamp:#{uuid}", JSON.stringify(currentTimestamp), (error) =>
         console.error error.stack if error?
         return callback null, true
 

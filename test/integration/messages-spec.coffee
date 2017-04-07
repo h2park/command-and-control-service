@@ -81,7 +81,7 @@ describe 'POST /v1/messages', ->
           event:
             type: 'meshblu'
             params:
-              uuid: "{{data.genisys.devices.activities}}"
+              uuid: "{{data.data.genisys.devices.activities}}"
               operation: 'update'
               data:
                 $set:
@@ -97,7 +97,7 @@ describe 'POST /v1/messages', ->
           event:
             type: 'meshblu'
             params:
-              uuid: "{{data.genisys.devices.activities}}"
+              uuid: "{{data.data.genisys.devices.activities}}"
               operation: 'update'
               data:
                 $set:
@@ -135,7 +135,7 @@ describe 'POST /v1/messages', ->
           event:
             type: 'meshblu'
             params:
-              uuid: "{{data.genisys.devices.activities}}"
+              uuid: "{{data.data.genisys.devices.activities}}"
               operation: 'update'
               data:
                 $set:
@@ -151,7 +151,7 @@ describe 'POST /v1/messages', ->
           event:
             type: 'meshblu'
             params:
-              uuid: "{{data.genisys.devices.activities}}"
+              uuid: "{{data.data.genisys.devices.activities}}"
               operation: 'update'
               data:
                 $set:
@@ -172,10 +172,11 @@ describe 'POST /v1/messages', ->
         username: 'room-group-uuid'
         password: 'room-group-token'
       json:
-        uuid: 'room-uuid'
-        genisys:
-          devices:
-            activities: 'activities-device-uuid'
+        data:
+          uuid: 'room-uuid'
+          genisys:
+            devices:
+              activities: 'activities-device-uuid'
 
     {@error, @response, @body} = {}
 
@@ -229,6 +230,7 @@ describe 'POST /v1/messages', ->
       @performRequest done
 
     it 'should return a 200', ->
+      console.log @response.body
       expect(@response.statusCode).to.equal 200
 
     it 'should not have an @errorMessage', ->
@@ -303,7 +305,7 @@ describe 'POST /v1/messages', ->
 
   describe 'When we update a device without a uuid', ->
     beforeEach (done) ->
-      delete @options.json.genisys.devices.activities
+      delete @options.json.data.genisys.devices.activities
       @performRequest done
 
     it 'should return a 422', ->
