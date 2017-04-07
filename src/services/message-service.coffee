@@ -29,7 +29,8 @@ class MessageService
     @redlock = new Redlock [@redis], retryCount: 45, retryDelay: 500
 
   resolve: (callback) =>
-    @resolver.resolve @device, (error, @device) =>
+    @resolver.resolve @device, (error, resolvedDevice) =>
+      @device = resolvedDevice if resolvedDevice?
       callback error
 
   process: (callback) =>
