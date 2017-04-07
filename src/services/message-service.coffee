@@ -61,7 +61,10 @@ class MessageService
     return callback null, true unless @timestampPath?
     currentTimestamp = _.get @data, @timestampPath
     return callback null, true unless currentTimestamp?
-    @redis.get "cache:timestamp:#{@device.uuid}", (error, data) =>
+    uuid = @device.uuid
+    route = _.first _.get(@data, 'metadata.route', [])
+    uuid = route.from unless _.isEmpty route
+    @redis.get "cache:timestamp:#{uuid}", (error, data) =>
       return callback error if error?
       try
         data = JSON.parse data
