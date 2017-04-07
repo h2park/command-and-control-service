@@ -26,7 +26,7 @@ class MessageService
     @deviceCache = new DeviceCache { @meshblu, @redis }
     @requestCache = new RequestCache { @redis }
     @resolver = new RefResolver { @meshbluConfig }
-    @redlock = new Redlock [@redis], retryCount: 20, retryDelay: 100
+    @redlock = new Redlock [@redis], retryCount: 40, retryDelay: 500
 
   resolve: (callback) =>
     @resolver.resolve @device, (error, @device) =>
@@ -66,7 +66,7 @@ class MessageService
               return unlockCallback @_errorHandler(error) if error?
               commands = _.flatten results
               commands = @_mergeCommands commands
-              async.each commands, @_doCommand, (error) =>
+              async.each commands, async.apply(@_doCommandWithLock, lock), (error) =>
                 unlockCallback @_errorHandler(error)
 
   _isFutureTimestamp: ({ uuid }, callback) =>
@@ -133,6 +133,10 @@ class MessageService
       @benchmarks["do-rules"] ?= []
       @benchmarks["do-rules"].push "#{benchmark.elapsed()}ms"
       return callback @_addErrorContext(error, {rulesConfig, @data, @device}), data
+
+  _doCommandWithLock: (lock, command, callback) =>
+    lock.extend 1000, =>
+      @_doCommand command, callback
 
   _doCommand: (command, callback) =>
     benchmark = new SimpleBenchmark { label: 'do-command' }
