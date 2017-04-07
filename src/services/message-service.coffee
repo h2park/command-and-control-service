@@ -71,9 +71,13 @@ class MessageService
       catch error
         return callback null, true
 
-      previousTimestamp = _.get data, @timestampPath
+      previousTimestamp = _.get data, "data.#{@timestampPath}"
       return callback null, true unless previousTimestamp?
-      return callback null, currentTimestamp > previousTimestamp
+      isFuture = currentTimestamp > previousTimestamp
+      return callback null, false unless isFuture
+      @redis.set "cache:timestamp:#{uuid}", JSON.stringify(@data), (error) =>
+        console.error error.stack if error?
+        return callback null, true
 
   _logSlowRequest: =>
     debugSlow(@meshbluAuth.uuid, 'benchmarks', @benchmarks)

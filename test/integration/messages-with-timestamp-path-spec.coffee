@@ -208,7 +208,7 @@ describe 'POST /v1/messages?timestampPath=meshblu.updatedAt', ->
 
   describe 'When everything works', ->
     beforeEach (done) ->
-      @redis.set 'cache:timestamp:room-group-uuid', JSON.stringify(meshblu: updatedAt: '2017-04-06T00:00:00Z'), done
+      @redis.set 'cache:timestamp:room-group-uuid', JSON.stringify(data: meshblu: updatedAt: '2017-04-06T00:00:00Z'), done
       return
 
     beforeEach (done) ->
