@@ -26,7 +26,7 @@ class MessageService
     @deviceCache = new DeviceCache { @meshblu, @redis }
     @requestCache = new RequestCache { @redis }
     @resolver = new RefResolver { @meshbluConfig }
-    @redlock = new Redlock [@redis], retryCount: 40, retryDelay: 500
+    @redlock = new Redlock [@redis], retryCount: 45, retryDelay: 500
 
   resolve: (callback) =>
     @resolver.resolve @device, (error, @device) =>
@@ -40,8 +40,8 @@ class MessageService
     route = _.first _.get(@data, 'metadata.route', [])
     uuid = route.from unless _.isEmpty route
 
-    @redlock.lock "lock:#{uuid}", 10000, (error, lock) =>
-      return callback error if error?
+    @redlock.lock "lock:#{uuid}", 5000, (error, lock) =>
+      console.error error.stack if error?
       unlockCallback = (error) =>
         lock.unlock =>
           @benchmarks['process:total'] = "#{benchmark.elapsed()}ms"
@@ -58,11 +58,12 @@ class MessageService
         return unlockCallback() if _.isEmpty @rulesets
 
         @resolve (error) =>
+          debug("failed to resolve #{uuid}") if error?
           return unlockCallback @_errorHandler(error) if error?
 
-          async.map @rulesets, @_getRuleset, (error, rulesMap) =>
+          async.map @rulesets, async.apply(@_getRulesetWithLock, lock), (error, rulesMap) =>
             return unlockCallback @_errorHandler(error) if error?
-            async.map _.compact(_.flatten(rulesMap)), @_doRule, (error, results) =>
+            async.map _.compact(_.flatten(rulesMap)), async.apply(@_doRuleWithLock, lock), (error, results) =>
               return unlockCallback @_errorHandler(error) if error?
               commands = _.flatten results
               commands = @_mergeCommands commands
@@ -111,6 +112,10 @@ class MessageService
 
     return _.union allUpdates, _.values(mergedUpdates)
 
+  _getRulesetWithLock: (lock, ruleset, callback) =>
+    lock.extend 1000, =>
+      @_getRuleset ruleset, callback
+
   _getRuleset: (ruleset, callback) =>
     return callback() unless ruleset.uuid?
     benchmark = new SimpleBenchmark { label: 'get-ruleset' }
@@ -123,6 +128,10 @@ class MessageService
       , (error, rules) =>
         @benchmarks["get-ruleset:#{ruleset.uuid}"] = "#{benchmark.elapsed()}ms"
         return callback error, _.flatten rules
+
+  _doRuleWithLock: (lock, rulesConfig, callback) =>
+    lock.extend 1000, =>
+      @_doRule rulesConfig, callback
 
   _doRule: (rulesConfig, callback) =>
     benchmark = new SimpleBenchmark { labal: 'do-rules' }
