@@ -60,7 +60,7 @@ class MessageService
         return unlockCallback() if _.isEmpty @rulesets
 
         @resolve (error) =>
-          debug("failed to resolve #{uuid}") if error?
+          debug("failed to resolve #{uuid} for device #{@device.uuid}") if error?
           return unlockCallback @_errorHandler(error) if error?
 
           async.map @rulesets, async.apply(@_getRulesetWithLock, lock), (error, rulesMap) =>
