@@ -30,8 +30,10 @@ class MessageService
 
   resolve: (callback) =>
     @resolver.resolve @device, (error, resolvedDevice) =>
+      debug error.stack if error?
+      return callback error if error?
       @device = resolvedDevice if resolvedDevice?
-      callback error
+      callback()
 
   process: (callback) =>
     debug 'messageService.create'
