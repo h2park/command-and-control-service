@@ -43,6 +43,7 @@ class MessageService
 
     @redlock.lock "lock:#{uuid}", 5000, (error, lock) =>
       console.error error.stack if error?
+      return _.defer @process callback unless lock?
       unlockCallback = (error) =>
         lock.unlock =>
           @benchmarks['process:total'] = "#{benchmark.elapsed()}ms"
