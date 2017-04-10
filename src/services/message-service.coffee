@@ -30,7 +30,7 @@ class MessageService
 
   resolve: (callback) =>
     @resolver.resolve @device, (error, resolvedDevice) =>
-      debug "[#{error.uuid} as #{error.as || error.uuid}] (#{error.code})", error if error?
+      debug "[#{error.uuid} as #{error.as || 'nobody'}]", error.message if error?
       return callback error if error?
       @device = resolvedDevice if resolvedDevice?
       callback()
@@ -44,13 +44,16 @@ class MessageService
     @redlock.lock "lock:#{uuid}", 5000, (error, lock) =>
       console.error error.stack if error?
       return _.defer @process, { benchmark }, callback unless lock?
+      @benchmarks['redlock'] = "#{benchmark.elapsed()}ms"
       unlockCallback = (error) =>
         lock.unlock =>
           @benchmarks['process:total'] = "#{benchmark.elapsed()}ms"
           @_logSlowRequest() if benchmark.elapsed() > @SLOW_MS
           return callback error
 
+      timestampBenchmark = new SimpleBenchmark { label: 'future-timestamp' }
       @_isFutureTimestamp { uuid }, (error, canProcess) =>
+        @benchmarks['future:timestamp'] = "#{timestampBenchmark.elapsed()}ms"
         return unlockCallback @_errorHandler(error) if error?
         unless canProcess
           error = new Error 'Refusing to process older message'
@@ -59,7 +62,9 @@ class MessageService
 
         return unlockCallback() if _.isEmpty @rulesets
 
+        resolveBenchmark = new SimpleBenchmark { label: 'ref-resolve' }
         @resolve (error) =>
+          @benchmarks["ref:resolve"] = "#{resolveBenchmark.elapsed()}ms"
           debug("failed to resolve #{uuid} for device #{@device.uuid}") if error?
           return unlockCallback @_errorHandler(error) if error?
 
