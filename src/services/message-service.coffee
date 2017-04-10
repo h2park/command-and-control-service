@@ -37,13 +37,16 @@ class MessageService
 
   process: ({ benchmark }, callback) =>
     uuid = @device.uuid
+    lockKey = "lock:uuid:#{uuid}"
     route = _.first _.get(@data, 'metadata.route', [])
-    uuid = route.from unless _.isEmpty route
+    unless _.isEmpty route
+      lockKey = "lock:route:#{@device.uuid}:from:#{route.from}"
+      uuid = route.from
 
-    @redlock.lock "lock:#{uuid}", 5000, (error, lock) =>
+    @redlock.lock lockKey, 5000, (error, lock) =>
       console.error error.stack if error?
       return _.defer @process, { benchmark }, callback unless lock?
-      @benchmarks['redlock'] = "#{benchmark.elapsed()}ms"
+      @benchmarks["redlock:#{lockKey}"] = "#{benchmark.elapsed()}ms"
       unlockCallback = (error) =>
         lock.unlock =>
           @benchmarks['process:total'] = "#{benchmark.elapsed()}ms"
