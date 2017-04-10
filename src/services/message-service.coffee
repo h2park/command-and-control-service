@@ -36,7 +36,6 @@ class MessageService
       callback()
 
   process: ({ benchmark }, callback) =>
-    debug 'messageService.create'
     uuid = @device.uuid
     route = _.first _.get(@data, 'metadata.route', [])
     uuid = route.from unless _.isEmpty route
