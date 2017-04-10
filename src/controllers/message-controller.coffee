@@ -9,9 +9,14 @@ class MessageController
   create: (request, response) =>
     debug 'messageController.create'
     data = request.body
+    route = request.header 'X-MESHBLU-ROUTE'
+    try
+      route = JSON.parse route
+    catch error
+
     { timestampPath } = request.query
     { meshbluAuth, meshbluDevice } = request
-    messageService = new @MessageService { meshbluAuth, data, device: meshbluDevice, timestampPath, @redis }
+    messageService = new @MessageService { meshbluAuth, route, data, device: meshbluDevice, timestampPath, @redis }
     benchmark = new SimpleBenchmark { label: 'process:total' }
     messageService.process { benchmark }, (error) =>
       debug 'done messageController.create'

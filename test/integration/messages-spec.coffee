@@ -81,7 +81,7 @@ describe 'POST /v1/messages', ->
           event:
             type: 'meshblu'
             params:
-              uuid: "{{data.data.genisys.devices.activities}}"
+              uuid: "{{data.genisys.devices.activities}}"
               operation: 'update'
               data:
                 $set:
@@ -97,7 +97,7 @@ describe 'POST /v1/messages', ->
           event:
             type: 'meshblu'
             params:
-              uuid: "{{data.data.genisys.devices.activities}}"
+              uuid: "{{data.genisys.devices.activities}}"
               operation: 'update'
               data:
                 $set:
@@ -135,7 +135,7 @@ describe 'POST /v1/messages', ->
           event:
             type: 'meshblu'
             params:
-              uuid: "{{data.data.genisys.devices.activities}}"
+              uuid: "{{data.genisys.devices.activities}}"
               operation: 'update'
               data:
                 $set:
@@ -151,7 +151,7 @@ describe 'POST /v1/messages', ->
           event:
             type: 'meshblu'
             params:
-              uuid: "{{data.data.genisys.devices.activities}}"
+              uuid: "{{data.genisys.devices.activities}}"
               operation: 'update'
               data:
                 $set:
@@ -172,11 +172,10 @@ describe 'POST /v1/messages', ->
         username: 'room-group-uuid'
         password: 'room-group-token'
       json:
-        data:
-          uuid: 'room-uuid'
-          genisys:
-            devices:
-              activities: 'activities-device-uuid'
+        uuid: 'room-uuid'
+        genisys:
+          devices:
+            activities: 'activities-device-uuid'
 
     {@error, @response, @body} = {}
 
@@ -305,7 +304,7 @@ describe 'POST /v1/messages', ->
 
   describe 'When we update a device without a uuid', ->
     beforeEach (done) ->
-      delete @options.json.data.genisys.devices.activities
+      delete @options.json.genisys.devices.activities
       @performRequest done
 
     it 'should return a 422', ->

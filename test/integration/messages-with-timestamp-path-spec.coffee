@@ -174,13 +174,12 @@ describe 'POST /v1/messages?timestampPath=meshblu.updatedAt', ->
         username: 'room-group-uuid'
         password: 'room-group-token'
       json:
-        data:
-          uuid: 'room-uuid'
-          genisys:
-            devices:
-              activities: 'activities-device-uuid'
-          meshblu:
-            updatedAt: '2010-04-04T00:00:00Z'
+        uuid: 'room-uuid'
+        genisys:
+          devices:
+            activities: 'activities-device-uuid'
+        meshblu:
+          updatedAt: '2010-04-04T00:00:00Z'
 
     {@error, @response, @body} = {}
 

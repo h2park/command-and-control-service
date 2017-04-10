@@ -13,7 +13,7 @@ Redlock            = require 'redlock'
 SimpleBenchmark    = require 'simple-benchmark'
 
 class MessageService
-  constructor: ({ @data, @device, @meshbluAuth, @timestampPath, @redis }) ->
+  constructor: ({ @route, @data, @device, @meshbluAuth, @timestampPath, @redis }) ->
     meshbluJSON = new MeshbluConfig().toJSON()
     @meshbluConfig = _.defaults(@meshbluAuth, meshbluJSON)
     commandAndControl = _.get @device, 'commandAndControl', {}
@@ -38,9 +38,8 @@ class MessageService
   process: ({ benchmark }, callback) =>
     uuid = @device.uuid
     lockKey = "lock:uuid:#{uuid}"
-    route = _.first _.get(@data, 'metadata.route', [])
-    debug JSON.stringify({ @data })
-    debug JSON.stringify({ route })
+    route = _.first @route
+    debug JSON.stringify({ @route })
     unless _.isEmpty route
       lockKey = "lock:route:#{@device.uuid}:from:#{route.from}"
       uuid = route.from
@@ -83,7 +82,7 @@ class MessageService
 
   _isFutureTimestamp: ({ uuid }, callback) =>
     return callback null, true unless @timestampPath?
-    currentTimestamp = _.get @data, "data.#{@timestampPath}"
+    currentTimestamp = _.get @data, @timestampPath
     return callback null, true unless currentTimestamp?
     @redis.get "cache:timestamp:#{uuid}", (error, previousTimestamp) =>
       return callback error if error?
