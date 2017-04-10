@@ -39,7 +39,6 @@ class MessageService
     uuid = @device.uuid
     lockKey = "lock:uuid:#{uuid}"
     route = _.first @route
-    debug JSON.stringify({ @route })
     unless _.isEmpty route
       lockKey = "lock:route:#{@device.uuid}:from:#{route.from}"
       uuid = route.from
