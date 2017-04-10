@@ -3,7 +3,6 @@ async              = require 'async'
 Meshblu            = require 'meshblu-http'
 MeshbluConfig      = require 'meshblu-config'
 MeshbluRulesEngine = require 'meshblu-rules-engine'
-SimpleBenchmark    = require 'simple-benchmark'
 RequestCache       = require '../helpers/cached-request'
 DeviceCache        = require '../helpers/cached-device'
 debug              = require('debug')('command-and-control:message-service')
@@ -11,6 +10,7 @@ debugError         = require('debug')('command-and-control:user-errors')
 debugSlow          = require('debug')("command-and-control:slow-requests")
 RefResolver        = require 'meshblu-json-schema-resolver'
 Redlock            = require 'redlock'
+SimpleBenchmark    = require 'simple-benchmark'
 
 class MessageService
   constructor: ({ @data, @device, @meshbluAuth, @timestampPath, @redis }) ->
@@ -35,17 +35,15 @@ class MessageService
       @device = resolvedDevice if resolvedDevice?
       callback()
 
-  process: (callback) =>
+  process: ({ benchmark }, callback) =>
     debug 'messageService.create'
-    benchmark = new SimpleBenchmark { label: 'process:total' }
-
     uuid = @device.uuid
     route = _.first _.get(@data, 'metadata.route', [])
     uuid = route.from unless _.isEmpty route
 
     @redlock.lock "lock:#{uuid}", 5000, (error, lock) =>
       console.error error.stack if error?
-      return _.defer @process, callback unless lock?
+      return _.defer @process, { benchmark }, callback unless lock?
       unlockCallback = (error) =>
         lock.unlock =>
           @benchmarks['process:total'] = "#{benchmark.elapsed()}ms"

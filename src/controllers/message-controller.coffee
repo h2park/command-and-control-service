@@ -1,4 +1,5 @@
-debug = require('debug')('command-and-control:message-controller')
+debug           = require('debug')('command-and-control:message-controller')
+SimpleBenchmark = require 'simple-benchmark'
 
 class MessageController
   constructor: ({@MessageService, @redis}) ->
@@ -11,7 +12,8 @@ class MessageController
     { timestampPath } = request.query
     { meshbluAuth, meshbluDevice } = request
     messageService = new @MessageService { meshbluAuth, data, device: meshbluDevice, timestampPath, @redis }
-    messageService.process (error) =>
+    benchmark = new SimpleBenchmark { label: 'process:total' }
+    messageService.process { benchmark }, (error) =>
       debug 'done messageController.create'
       return response.sendError(error) if error?
       response.sendStatus(200)
