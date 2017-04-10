@@ -30,7 +30,7 @@ class MessageService
 
   resolve: (callback) =>
     @resolver.resolve @device, (error, resolvedDevice) =>
-      debug error.stack if error?
+      debug "[#{error.uuid} as #{error.as || error.uuid}] (#{error.code})", error if error?
       return callback error if error?
       @device = resolvedDevice if resolvedDevice?
       callback()

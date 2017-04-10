@@ -1,6 +1,6 @@
 {
   "name": "command-and-control-service",
-  "version": "7.2.16",
+  "version": "7.2.17",
   "description": "command-and-control-service an Octoblu Service",
   "keywords": [
     "Octoblu",
@@ -31,15 +31,15 @@
     "mocha": "^3.0.2",
     "mocha-multi": "^0.10.0",
     "mocha-osx-reporter": "^0.1.2",
-    "nyc": "^10.1.2",
+    "nyc": "^10.2.0",
     "request": "^2.81.0",
     "shmock": "^0.8.1",
     "sinon": "^2.1.0",
     "sinon-chai": "^2.9.0"
   },
   "dependencies": {
-    "async": "^2.1.5",
-    "coffee-script": "^1.12.4",
+    "async": "^2.3.0",
+    "coffee-script": "^1.12.5",
     "debug": "^2.6.3",
     "express-meshblu-auth": "^9.1.0",
     "express-octoblu": "^3.0.1",
@@ -47,7 +47,7 @@
     "lodash": "^4.15.0",
     "meshblu-config": "^7.0.0",
     "meshblu-http": "^9.8.0",
-    "meshblu-json-schema-resolver": "^2.0.5",
+    "meshblu-json-schema-resolver": "^2.1.0",
     "meshblu-rules-engine": "^3.0.2",
     "node-cache": "^4.1.1",
     "redlock": "^2.1.0",
