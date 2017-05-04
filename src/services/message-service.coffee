@@ -29,6 +29,9 @@ class MessageService
     @redlock = new Redlock [@redis], retryCount: 45, retryDelay: 500
 
   resolve: (callback) =>
+    async.retry {times: 5, interval: 10, errorFilter: @_retryErrorFilter}, @_resolve, callback
+
+  _resolve: (callback) =>
     @resolver.resolve @device, (error, resolvedDevice) =>
       debug "[#{error.uuid} as #{error.as || 'nobody'}]", error.message if error?
       return callback error if error?
@@ -167,10 +170,16 @@ class MessageService
     options = {}
     options.as = params.as if params.as?
     { operation } = params
+    retry = params.retry || false
 
-    return @_meshbluUpdate params, options, done if operation == 'update'
-    return @_meshbluMessage params, options, done if operation == 'message'
+    return @meshbluUpdate {params, options, retry}, done if operation == 'update'
+    return @meshbluMessage {params, options, retry}, done if operation == 'message'
     return done new Error('unsupported operation type')
+
+  meshbluUpdate: ({params, options, retry}, callback) =>
+    times = 1
+    times = 5 if retry
+    async.retry {times, interval: 10, errorFilter: @_retryErrorFilter}, async.apply(@_meshbluUpdate, params, options), callback
 
   _meshbluUpdate: (params, options, callback) =>
     { uuid, data } = params
@@ -179,6 +188,11 @@ class MessageService
     return @meshblu.updateDangerously uuid, data, options, (error) =>
       @benchmarks["meshblu:update:#{uuid}"] = "#{benchmark.elapsed()}ms"
       callback error
+
+  meshbluMessage: ({params, options, retry}, callback) =>
+    times = 1
+    times = 5 if retry
+    async.retry {times, interval: 10, errorFilter: @_retryErrorFilter}, async.apply(@_meshbluMessage, params, options), callback
 
   _meshbluMessage: (params, options, callback) =>
     { message } = params
@@ -212,6 +226,8 @@ class MessageService
     @meshblu.message message, (error) =>
       return unless error?
       debug 'could not forward info message to meshblu'
+
+  _retryErrorFilter: (error) => error.code >= 500
 
   _sendError: (error) =>
     errorMessage =

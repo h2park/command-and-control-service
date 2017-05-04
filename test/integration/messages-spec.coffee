@@ -111,6 +111,7 @@ describe 'POST /v1/messages', ->
             ]
           event:
             type: 'meshblu'
+            retry: true
             params:
               operation: 'message'
               message:
