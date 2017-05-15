@@ -10,7 +10,7 @@ class Router
 
   route: (app) =>
     meshbluAuth = new MeshbluAuth @meshbluConfig
-    cacheController = new CacheController
+    cacheController = new CacheController { @redis }
     messageController = new MessageController { @MessageService, @redis }
 
     # Unauthenticated requests

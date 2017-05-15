@@ -230,8 +230,7 @@ describe 'POST /v1/messages', ->
       @performRequest done
 
     it 'should return a 200', ->
-      console.log @response.body
-      expect(@response.statusCode).to.equal 200
+      expect(@response.statusCode).to.equal 200, @response.body
 
     it 'should not have an @errorMessage', ->
       expect(@errorMessage).not.to.exist

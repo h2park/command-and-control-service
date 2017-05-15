@@ -1,6 +1,6 @@
+_         = require 'lodash'
 request   = require 'request'
 debug     = require('debug')('command-and-control:cache-request')
-_         = require 'lodash'
 
 class CachedRequest
   constructor: (options={}) ->

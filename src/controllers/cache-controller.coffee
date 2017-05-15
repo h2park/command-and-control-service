@@ -1,8 +1,15 @@
-{clearCache} = require '../helpers/cached-request'
+CachedRequest = require '../helpers/cached-request'
+CachedDevice  = require '../helpers/cached-device'
 
 class CacheController
-  delete: (req, res) =>
-    clearCache()
-    res.sendStatus 204
+  constructor: ({@redis}) ->
+    throw new Error 'Missing redis' unless @redis?
+    @cachedRequest = new CachedRequest { @redis }
+    @cachedDevice = new CachedDevice { meshblu: true, @redis }
+
+  delete: (request, response) =>
+    @cachedRequest.clearCache()
+    @cachedDevice.clearCache()
+    response.sendStatus 204
 
 module.exports = CacheController

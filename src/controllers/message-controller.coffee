@@ -10,9 +10,7 @@ class MessageController
     debug 'messageController.create'
     data = request.body
     route = request.header 'X-MESHBLU-ROUTE'
-    try
-      route = JSON.parse route
-    catch error
+    try route = JSON.parse route
 
     { timestampPath } = request.query
     { meshbluAuth, meshbluDevice } = request
