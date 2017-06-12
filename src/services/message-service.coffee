@@ -51,8 +51,10 @@ class MessageService
       return _.defer @process, { benchmark }, callback unless lock?
       @benchmarks["redlock:#{lockKey}"] = "#{benchmark.elapsed()}ms"
       unlockCallback = (error) =>
+        unlockBenchmark = new SimpleBenchmark { label: 'redlock:unlock' }
         lock.unlock =>
           @benchmarks['process:total'] = "#{benchmark.elapsed()}ms"
+          @benchmarks['redlock:unlock'] = "#{unlockBenchmark.elapsed()}ms"
           @_logSlowRequest() if benchmark.elapsed() > @SLOW_MS
           return callback error
 
@@ -124,10 +126,10 @@ class MessageService
     return _.union allUpdates, _.values(mergedUpdates)
 
   _getRulesetWithLock: (lock, ruleset, callback) =>
-    benchmark = new SimpleBenchmark { label: 'get-ruleset-lock-extend' }
-    @benchmarks["get-ruleset-lock-extend"] ?= []
+    benchmark = new SimpleBenchmark { label: 'redlock:extend' }
+    @benchmarks["redlock:extend"] ?= []
     lock.extend 1000, =>
-      @benchmarks["get-ruleset-lock-extend"].push "#{benchmark.elapsed()}ms"
+      @benchmarks["redlock:extend"].push "#{benchmark.elapsed()}ms"
       @_getRuleset ruleset, callback
 
   _getRuleset: (ruleset, callback) =>
@@ -144,10 +146,10 @@ class MessageService
         return callback error, _.flatten rules
 
   _doRuleWithLock: (lock, rulesConfig, callback) =>
-    benchmark = new SimpleBenchmark { label: 'do-rule-lock-extend' }
-    @benchmarks["do-rule-lock-extend"] ?= []
+    benchmark = new SimpleBenchmark { label: 'redlock:extend' }
+    @benchmarks["redlock:extend"] ?= []
     lock.extend 1000, =>
-      @benchmarks["do-rule-lock-extend"].push "#{benchmark.elapsed()}ms"
+      @benchmarks["redlock:extend"].push "#{benchmark.elapsed()}ms"
       @_doRule rulesConfig, callback
 
   _doRule: (rulesConfig, callback) =>
@@ -161,10 +163,10 @@ class MessageService
       return callback @_addErrorContext(error, {rulesConfig, @data, @device}), data
 
   _doCommandWithLock: (lock, command, callback) =>
-    benchmark = new SimpleBenchmark { label: 'do-command-lock-extend' }
-    @benchmarks["do-command-lock-extend"] ?= []
+    benchmark = new SimpleBenchmark { label: 'redlock:extend' }
+    @benchmarks["redlock:extend"] ?= []
     lock.extend 1000, =>
-      @benchmarks["do-command-lock-extend"].push "#{benchmark.elapsed()}ms"
+      @benchmarks["redlock:extend"].push "#{benchmark.elapsed()}ms"
       @_doCommand command, callback
 
   _doCommand: (command, callback) =>
