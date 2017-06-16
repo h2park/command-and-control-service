@@ -158,7 +158,7 @@ class MessageService
   _doRule: (rulesConfig, callback) =>
     benchmark = new SimpleBenchmark { label: 'do-rules' }
     context = {@data, @device}
-    engine = new MeshbluRulesEngine {@meshbluConfig, rulesConfig}
+    engine = new MeshbluRulesEngine {@meshbluConfig, rulesConfig, @skipRefResolver}
     engine.run context, (error, data) =>
       @_logInfo {rulesConfig, @data, @device}
       @benchmarks["do-rules"] ?= []
