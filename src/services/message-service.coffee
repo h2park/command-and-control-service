@@ -19,6 +19,7 @@ class MessageService
     commandAndControl = _.get @device, 'commandAndControl', {}
     @errorDevice = commandAndControl.errorDevice
     @rulesets ?= commandAndControl.rulesets ? @device.rulesets
+    @skipRefResolver = commandAndControl.skipRefResolver
     @meshblu = new Meshblu @meshbluConfig
     @benchmarks = {}
     SimpleBenchmark.resetIds()
@@ -32,6 +33,8 @@ class MessageService
     async.retry {times: 5, interval: 10, errorFilter: @_retryErrorFilter}, @_resolve, callback
 
   _resolve: (callback) =>
+    return callback() if @skipRefResolver
+
     @resolver.resolve @device, (error, resolvedDevice) =>
       debug "[#{error.uuid} as #{error.as || 'nobody'}]", error.message if error?
       return callback error if error?
