@@ -27,7 +27,7 @@ class MessageService
     @deviceCache = new DeviceCache { @meshblu, @redis }
     @requestCache = new RequestCache { @redis }
     @resolver = new RefResolver { @meshbluConfig }
-    @redlock = new Redlock [@redis], retryCount: 45, retryDelay: 500
+    @redlock = new Redlock [@redis], retryCount: 60, retryDelay: 500
 
   resolve: (callback) =>
     async.retry {times: 5, interval: 10, errorFilter: @_retryErrorFilter}, @_resolve, callback
@@ -49,7 +49,7 @@ class MessageService
       lockKey = "lock:route:#{@device.uuid}:from:#{route.from}"
       uuid = route.from
 
-    @redlock.lock lockKey, 5000, (error, lock) =>
+    @redlock.lock lockKey, 30000, (error, lock) =>
       console.error error.stack if error?
       return _.defer @process, { benchmark }, callback unless lock?
       @benchmarks["redlock:#{lockKey}"] = "#{benchmark.elapsed()}ms"
@@ -131,7 +131,7 @@ class MessageService
   _getRulesetWithLock: (lock, ruleset, callback) =>
     benchmark = new SimpleBenchmark { label: 'redlock:extend' }
     @benchmarks["redlock:extend"] ?= []
-    lock.extend 1000, =>
+    lock.extend 30000, =>
       @benchmarks["redlock:extend"].push "#{benchmark.elapsed()}ms"
       @_getRuleset ruleset, callback
 
@@ -151,7 +151,7 @@ class MessageService
   _doRuleWithLock: (lock, rulesConfig, callback) =>
     benchmark = new SimpleBenchmark { label: 'redlock:extend' }
     @benchmarks["redlock:extend"] ?= []
-    lock.extend 1000, =>
+    lock.extend 30000, =>
       @benchmarks["redlock:extend"].push "#{benchmark.elapsed()}ms"
       @_doRule rulesConfig, callback
 
@@ -168,7 +168,7 @@ class MessageService
   _doCommandWithLock: (lock, command, callback) =>
     benchmark = new SimpleBenchmark { label: 'redlock:extend' }
     @benchmarks["redlock:extend"] ?= []
-    lock.extend 1000, =>
+    lock.extend 30000, =>
       @benchmarks["redlock:extend"].push "#{benchmark.elapsed()}ms"
       @_doCommand command, callback
 
