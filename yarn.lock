@@ -1624,9 +1624,9 @@ meshblu-json-schema-resolver@^2.1.0, meshblu-json-schema-resolver@^2.2.0:
     lodash "^4.13.1"
     url-parse "^1.1.9"
 
-meshblu-rules-engine@^3.4.0:
-  version "3.4.0"
-  resolved "https://registry.yarnpkg.com/meshblu-rules-engine/-/meshblu-rules-engine-3.4.0.tgz#c323fd7509127dd5317395a0b534e6c5af9186c0"
+meshblu-rules-engine@^3.5.0:
+  version "3.5.0"
+  resolved "https://registry.yarnpkg.com/meshblu-rules-engine/-/meshblu-rules-engine-3.5.0.tgz#7c6801d015b61213501b3e7e3dbc5405d9bcfea2"
   dependencies:
     async "^2.4.1"
     christacheio "^3.1.1"

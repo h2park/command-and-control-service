@@ -158,12 +158,22 @@ class MessageService
   _doRule: (rulesConfig, callback) =>
     benchmark = new SimpleBenchmark { label: 'do-rules' }
     context = {@data, @device}
-    engine = new MeshbluRulesEngine {@meshbluConfig, rulesConfig, @skipRefResolver}
-    engine.run context, (error, data) =>
-      @_logInfo {rulesConfig, @data, @device}
-      @benchmarks["do-rules"] ?= []
-      @benchmarks["do-rules"].push "#{benchmark.elapsed()}ms"
-      return callback @_addErrorContext(error, {rulesConfig, @data, @device}), data
+
+    @_getFromDevice (error, fromDevice) =>
+      return callback error if error?
+
+      context.fromDevice = fromDevice
+
+      engine = new MeshbluRulesEngine {@meshbluConfig, rulesConfig, @skipRefResolver}
+      engine.run context, (error, data) =>
+        @_logInfo {rulesConfig, @data, @device}
+        @benchmarks["do-rules"] ?= []
+        @benchmarks["do-rules"].push "#{benchmark.elapsed()}ms"
+        return callback @_addErrorContext(error, {rulesConfig, @data, @device}), data
+
+  _getFromDevice: (callback) =>
+    return callback null, @device if _.isEmpty @route
+    @meshblu.device _.first(@route).from, (error, fromDevice) => callback null, fromDevice
 
   _doCommandWithLock: (lock, command, callback) =>
     benchmark = new SimpleBenchmark { label: 'redlock:extend' }
