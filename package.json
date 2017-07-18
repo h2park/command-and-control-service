@@ -1,6 +1,6 @@
 {
   "name": "command-and-control-service",
-  "version": "7.5.1",
+  "version": "7.5.2",
   "description": "command-and-control-service an Octoblu Service",
   "keywords": [
     "Octoblu",
@@ -48,7 +48,7 @@
     "meshblu-config": "^7.0.0",
     "meshblu-http": "^9.9.0",
     "meshblu-json-schema-resolver": "^2.1.0",
-    "meshblu-rules-engine": "^3.5.0",
+    "meshblu-rules-engine": "^3.5.1",
     "node-cache": "^4.1.1",
     "redlock": "^3.0.0",
     "server-destroy": "^1.0.1",
