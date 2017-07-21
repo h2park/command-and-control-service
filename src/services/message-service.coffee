@@ -169,7 +169,7 @@ class MessageService
         @_logInfo {rulesConfig, @data, @device}
         @benchmarks["do-rules"] ?= []
         @benchmarks["do-rules"].push "#{benchmark.elapsed()}ms"
-        return callback @_addErrorContext(error, {rulesConfig, @data, @device}), data
+        return callback @_addErrorContext(error, {rulesConfig, @data, @device, fromDevice}), data
 
   _getFromDevice: (callback) =>
     return callback null, @device if _.isEmpty @route
