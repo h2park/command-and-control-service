@@ -1,6 +1,6 @@
 {
   "name": "command-and-control-service",
-  "version": "8.0.0",
+  "version": "8.0.1",
   "description": "command-and-control-service an Octoblu Service",
   "keywords": [
     "Octoblu",
@@ -25,7 +25,7 @@
     "test:watch": "mocha -w -R mocha-multi --reporter-options spec=-,mocha-osx-reporter=-"
   },
   "devDependencies": {
-    "chai": "^4.1.0",
+    "chai": "^4.1.1",
     "chai-subset": "^1.5.0",
     "env-test": "^1.0.0",
     "mocha": "^3.5.0",
@@ -34,21 +34,21 @@
     "nyc": "^11.1.0",
     "request": "^2.81.0",
     "shmock": "^0.8.1",
-    "sinon": "^3.0.0",
+    "sinon": "^3.1.0",
     "sinon-chai": "^2.12.0"
   },
   "dependencies": {
     "async": "^2.5.0",
     "coffee-script": "^1.12.7",
-    "debug": "^2.6.8",
+    "debug": "^3.0.0",
     "express-meshblu-auth": "^9.2.1",
-    "express-octoblu": "^4.0.1",
+    "express-octoblu": "^4.1.1",
     "ioredis": "^3.1.2",
     "lodash": "^4.15.0",
     "meshblu-config": "^8.0.1",
-    "meshblu-http": "^10.0.6",
-    "meshblu-json-schema-resolver": "^3.0.0",
-    "meshblu-rules-engine": "^4.0.0",
+    "meshblu-http": "^10.0.7",
+    "meshblu-json-schema-resolver": "^3.0.1",
+    "meshblu-rules-engine": "^4.1.0",
     "node-cache": "^4.1.1",
     "redlock": "^3.0.0",
     "server-destroy": "^1.0.1",
