@@ -165,11 +165,11 @@ class MessageService
       context.fromDevice = fromDevice
 
       engine = new MeshbluRulesEngine {@meshbluConfig, rulesConfig, @skipRefResolver}
-      engine.run context, (error, data) =>
-        @_logInfo {rulesConfig, @data, @device}
+      engine.run context, (error, events) =>
+        @_logInfo {rulesConfig, @data, @device, events}
         @benchmarks["do-rules"] ?= []
         @benchmarks["do-rules"].push "#{benchmark.elapsed()}ms"
-        return callback @_addErrorContext(error, {rulesConfig, @data, @device, fromDevice}), data
+        return callback @_addErrorContext(error, {rulesConfig, @data, @device, fromDevice}), events
 
   _getFromDevice: (callback) =>
     return callback null, @device if _.isEmpty @route
