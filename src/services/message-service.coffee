@@ -239,13 +239,14 @@ class MessageService
     error.code = 422
     return error
 
-  _logInfo: ({rulesConfig, data, device}) =>
+  _logInfo: ({rulesConfig, data, device, events}) =>
     return unless @errorDevice?
     return unless @errorDevice.logLevel == 'info'
 
     message =
       devices: [ @errorDevice.uuid ]
       input: {data, deviceUuid: @device.uuid, device, rulesConfig}
+      events: events
 
     @meshblu.message message, (error) =>
       return unless error?
