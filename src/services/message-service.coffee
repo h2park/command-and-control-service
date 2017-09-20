@@ -129,6 +129,7 @@ class MessageService
     return _.union allUpdates, _.values(mergedUpdates)
 
   _getRulesetWithLock: (lock, ruleset, callback) =>
+    return callback() if _.isEmpty ruleset
     benchmark = new SimpleBenchmark { label: 'redlock:extend' }
     @benchmarks["redlock:extend"] ?= []
     lock.extend 30000, =>
