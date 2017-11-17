@@ -80,12 +80,16 @@ class MessageService
 
           async.map @rulesets, async.apply(@_getRulesetWithLock, lock), (error, rulesMap) =>
             return unlockCallback @_errorHandler(error) if error?
-            async.map _.compact(_.flatten(rulesMap)), async.apply(@_doRuleWithLock, lock), (error, results) =>
-              return unlockCallback @_errorHandler(error) if error?
-              commands = _.flatten results
-              commands = @_mergeCommands commands
-              async.each commands, async.apply(@_doCommandWithLock, lock), (error) =>
-                unlockCallback @_errorHandler(error)
+            
+            @_getFromDevice (error, fromDevice) =>
+              return callback error if error?
+
+              async.map _.compact(_.flatten(rulesMap)), async.apply(@_doRuleWithLock, lock, fromDevice), (error, results) =>
+                return unlockCallback @_errorHandler(error) if error?
+                commands = _.flatten results
+                commands = @_mergeCommands commands
+                async.each commands, async.apply(@_doCommandWithLock, lock), (error) =>
+                  unlockCallback @_errorHandler(error)
 
   _isFutureTimestamp: ({ uuid }, callback) =>
     return callback null, true unless @timestampPath?
@@ -149,28 +153,23 @@ class MessageService
         @benchmarks["get-ruleset:#{ruleset.uuid}"] = "#{benchmark.elapsed()}ms"
         return callback error, _.flatten rules
 
-  _doRuleWithLock: (lock, rulesConfig, callback) =>
+  _doRuleWithLock: (lock, fromDevice, rulesConfig, callback) =>
     benchmark = new SimpleBenchmark { label: 'redlock:extend' }
     @benchmarks["redlock:extend"] ?= []
     lock.extend 30000, =>
       @benchmarks["redlock:extend"].push "#{benchmark.elapsed()}ms"
-      @_doRule rulesConfig, callback
+      @_doRule fromDevice, rulesConfig, callback
 
-  _doRule: (rulesConfig, callback) =>
+  _doRule: (fromDevice, rulesConfig, callback) =>
     benchmark = new SimpleBenchmark { label: 'do-rules' }
-    context = {@data, @device}
+    context = { @data, @device, fromDevice }
 
-    @_getFromDevice (error, fromDevice) =>
-      return callback error if error?
-
-      context.fromDevice = fromDevice
-
-      engine = new MeshbluRulesEngine {@meshbluConfig, rulesConfig, @skipRefResolver}
-      engine.run context, (error, events) =>
-        @_logInfo {rulesConfig, @data, @device, events}
-        @benchmarks["do-rules"] ?= []
-        @benchmarks["do-rules"].push "#{benchmark.elapsed()}ms"
-        return callback @_addErrorContext(error, {rulesConfig, @data, @device, fromDevice}), events
+    engine = new MeshbluRulesEngine {@meshbluConfig, rulesConfig, @skipRefResolver}
+    engine.run context, (error, events) =>
+      @_logInfo {rulesConfig, @data, @device, events}
+      @benchmarks["do-rules"] ?= []
+      @benchmarks["do-rules"].push "#{benchmark.elapsed()}ms"
+      return callback @_addErrorContext(error, {rulesConfig, @data, @device, fromDevice}), events
 
   _getFromDevice: (callback) =>
     return callback null, @device if _.isEmpty @route
